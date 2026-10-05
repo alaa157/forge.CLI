@@ -19,6 +19,6 @@ public record JobExecutionRequest(
         if (timeout == null || timeout.isNegative() || timeout.isZero()) throw new IllegalArgumentException("timeout must be positive");
         if (cpuLimit <= 0 || memoryBytes <= 0 || pidsLimit <= 0) throw new IllegalArgumentException("resource limits must be positive");
         environment = environment == null ? Map.of() : Map.copyOf(environment);
-        artifactPaths = artifactPaths == null ? List.of() : List.copyOf(artifactPaths);
+        artifactPaths = artifactPaths == null ? List.of() : List.copyOf(artifactPaths);\n        cachePaths = cachePaths == null ? List.of() : List.copyOf(cachePaths);\n        if (cacheKey != null && cacheKey.length() > 512) throw new IllegalArgumentException("cacheKey is too long");
     }
 }
