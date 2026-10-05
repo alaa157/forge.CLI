@@ -3,7 +3,7 @@ CREATE TABLE forgeci.processed_messages (
     message_id UUID NOT NULL,
     consumer VARCHAR(128) NOT NULL,
     processed_at TIMESTAMPTZ NOT NULL,
-    CONSTRAINT uq_processed_messages_message_id UNIQUE (message_id)
+    CONSTRAINT uq_processed_messages_message_consumer UNIQUE (message_id, consumer)
 );
 
 CREATE INDEX idx_processed_messages_processed_at
