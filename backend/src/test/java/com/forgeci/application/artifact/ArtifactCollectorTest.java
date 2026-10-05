@@ -1,0 +1,5 @@
+package com.forgeci.application.artifact;
+import static org.junit.jupiter.api.Assertions.*;import java.nio.file.*;import java.util.*;import org.junit.jupiter.api.Test;
+class ArtifactCollectorTest{
+ @Test void collectsMatchingFilesIntoZip()throws Exception{Path root=Files.createTempDirectory("forgeci");try{Files.createDirectories(root.resolve("reports"));Files.writeString(root.resolve("reports/test.xml"),"ok");Files.writeString(root.resolve("ignore.txt"),"no");Path zip=new ArtifactCollector().collect(root,List.of("reports/*.xml")).orElseThrow();assertTrue(Files.size(zip)>0);assertTrue(zip.toString().endsWith(".zip"));Files.deleteIfExists(zip);}finally{try(var s=Files.walk(root)){s.sorted(Comparator.reverseOrder()).forEach(p->{try{Files.deleteIfExists(p);}catch(Exception ignored){}});}}}
+ @Test void rejectsTraversal()throws Exception{Path root=Files.createTempDirectory("forgeci");assertThrows(IllegalArgumentException.class,()->new ArtifactCollector().collect(root,List.of("../secret")));}}
