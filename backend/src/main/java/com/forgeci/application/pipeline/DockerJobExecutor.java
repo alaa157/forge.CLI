@@ -32,7 +32,7 @@ public class DockerJobExecutor implements JobExecutor {
     private final WorkspaceManager workspaces;
     private final LogChunkService logs;
     private final ArtifactCollector artifactCollector;
-    private final ArtifactService artifactService;\n    private final CacheService cacheService;
+    private final ArtifactService artifactService;\n    private final CacheService cacheService;\n    private final boolean nonRoot;
     private final JobCancellationRegistry cancellations;
 
     public DockerJobExecutor(
@@ -46,7 +46,7 @@ public class DockerJobExecutor implements JobExecutor {
         this.workspaces = workspaces;
         this.logs = logs;
         this.artifactCollector = artifactCollector;
-        this.artifactService = artifactService;\n        this.cacheService = cacheService;
+        this.artifactService = artifactService;\n        this.cacheService = cacheService;\n        this.nonRoot = nonRoot;
         this.cancellations = cancellations;
     }
 
@@ -61,7 +61,7 @@ public class DockerJobExecutor implements JobExecutor {
             args.add("--rm");
             args.add("--network");
             args.add("none");
-            args.add("--read-only");
+            args.add("--read-only");\n            if (nonRoot) { args.add("--user"); args.add("1000:1000"); }
             args.add("--cap-drop");
             args.add("ALL");
             args.add("--security-opt");
