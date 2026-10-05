@@ -18,7 +18,7 @@ public class PipelineScheduler {
  public void scheduleCreatedRuns(){
   List<PipelineRun> candidates=pipelineRuns.findAllByStatusOrderByCreatedAtAsc(PipelineRunStatus.CREATED);
   for(PipelineRun run:candidates.stream().limit(50).toList()){
-   UUID dispatchId=dispatches.claimDispatch(run.getId());
+   UUID dispatchId=dispatches.claimDispatch(UUID.randomUUID(),run.getId());
    if(dispatchId==null)continue;
    run.queue();
    pipelineRuns.save(run);
