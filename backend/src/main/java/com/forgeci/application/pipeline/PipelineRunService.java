@@ -64,7 +64,7 @@ public class PipelineRunService {
                     serialize(job.commands()),
                     serialize(job.dependsOn() == null ? List.of() : job.dependsOn())
             ));
-            jobRun.setArtifactPaths(serialize(artifactPaths(job)));
+            jobRun.setArtifactPaths(serialize(artifactPaths(job)));\n            if (job.cache() != null) { jobRun.setCacheKey(job.cache().key()); jobRun.setCachePaths(serialize(job.cache().paths() == null ? List.of() : job.cache().paths())); }\n            jobRun.setSecretNames(serialize(job.secrets() == null ? List.of() : job.secrets()));
             jobRun = jobRuns.save(jobRun);
             jobs.add(jobRun);
         }
