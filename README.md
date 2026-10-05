@@ -2,13 +2,19 @@
 
 Self-hosted, production-style CI/CD and test-intelligence platform.
 
-## Phase 1
-This phase provides the monorepo foundation, Spring Boot backend, Next.js frontend, local PostgreSQL/Redis/RabbitMQ/MinIO/Prometheus/Grafana infrastructure, Flyway, and health endpoints.
+## Current implementation
+
+- **Phase 1 — Foundation:** monorepo, Spring Boot backend, Next.js frontend, local infrastructure, Flyway, and health endpoints.
+- **Phase 2 — Authentication:** users, registration/login, refresh-token rotation, and authorization foundations.
+- **Phase 3 — Organizations and repositories:** multi-tenant organizations, repository connections, and GitHub integration foundations.
+- **Phase 4 — Pipeline Configuration:** typed `.forgeci.yml` parsing, safe YAML handling, schema documentation, validation, and deterministic DAG construction.
 
 ## Prerequisites
+
 Git, GNU Make, Java 21, Maven 3.9+, Node.js 20+, npm 10+, Docker Engine + Compose v2.
 
 ## Commands
+
 ```bash
 cp .env.example .env
 make help
@@ -17,4 +23,8 @@ make backend-test
 make frontend-check
 ```
 
-Endpoints: `/api/v1/health`, `/actuator/health`, `/actuator/prometheus`.
+## Pipeline configuration
+
+Pipeline definitions live in `.forgeci.yml`. See `docs/api/pipeline-configuration.md` and `pipeline-schema/schema.json`.
+
+Execution is intentionally deferred to later phases.
