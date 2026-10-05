@@ -10,6 +10,9 @@ public interface LogChunkRepository extends JpaRepository<LogChunk, UUID> {
     @Query("select coalesce(sum(length(l.content)), 0) from LogChunk l where l.jobRunId = :jobRunId")
     long totalBytes(@Param("jobRunId") UUID jobRunId);
 
+    @Query("select coalesce(max(l.sequence), -1) + 1 from LogChunk l where l.jobRunId = :jobRunId")
+    long nextSequence(@Param("jobRunId") UUID jobRunId);
+
     @Query("select l from LogChunk l where l.jobRunId = :jobRunId order by l.sequence desc")
     List<LogChunk> findTailRaw(@Param("jobRunId") UUID jobRunId, Pageable pageable);
 
