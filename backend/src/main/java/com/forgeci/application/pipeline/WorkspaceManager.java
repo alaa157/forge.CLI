@@ -9,9 +9,9 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class WorkspaceManager {
-    private final String gitBinary;
+    private final String gitBinary;\n    private final com.forgeci.application.security.OutboundUrlPolicy outboundUrls;
 
-    public WorkspaceManager(@Value("${forgeci.worker.git-binary:git}") String gitBinary){this.gitBinary=gitBinary;}
+    public WorkspaceManager(@Value("${forgeci.worker.git-binary:git}") String gitBinary, com.forgeci.application.security.OutboundUrlPolicy outboundUrls){this.gitBinary=gitBinary;this.outboundUrls=outboundUrls;}
 
     public Path checkout(String cloneUrl,String commitSha,String token){
         validateCloneUrl(cloneUrl);
@@ -48,7 +48,7 @@ public class WorkspaceManager {
 
     private void validateCloneUrl(String cloneUrl){
         try{
-            var uri=java.net.URI.create(cloneUrl); String host=uri.getHost();
+            var uri=java.net.URI.create(cloneUrl); outboundUrls.validate(uri); String host=uri.getHost();
             if(!"github.com".equalsIgnoreCase(host)&&!"www.github.com".equalsIgnoreCase(host))throw new IllegalArgumentException("Only GitHub repositories are supported");
         }catch(IllegalArgumentException e){throw new IllegalArgumentException("Invalid repository clone URL",e);}
     }
