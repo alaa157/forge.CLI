@@ -24,7 +24,13 @@ server.port: ${BACKEND_PORT:8080}
 forgeci:
   worker:
     docker-binary: ${FORGECI_WORKER_DOCKER_BINARY:docker}
+    git-binary: ${FORGECI_WORKER_GIT_BINARY:git}
     step-timeout-seconds: ${FORGECI_WORKER_STEP_TIMEOUT_SECONDS:1800}
+    cpu-limit: ${FORGECI_WORKER_CPU_LIMIT:2}
+    memory-bytes: ${FORGECI_WORKER_MEMORY_BYTES:2147483648}
+    pids-limit: ${FORGECI_WORKER_PIDS_LIMIT:256}
+  websocket:
+    allowed-origins: ${FORGECI_WEBSOCKET_ALLOWED_ORIGINS:http://localhost:3000}
   pipeline:
     scheduler-delay-ms: ${FORGECI_PIPELINE_SCHEDULER_DELAY_MS:1000}
     publisher-delay-ms: ${FORGECI_PIPELINE_PUBLISHER_DELAY_MS:500}
