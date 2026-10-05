@@ -8,8 +8,7 @@ public class ArtifactController{
  public ArtifactController(ArtifactService service){this.service=service;}
  @GetMapping("/jobs/{id}/artifacts") public List<Artifact> list(@PathVariable UUID id){return service.list(id);}
  @GetMapping("/artifacts/{id}/download") public ResponseEntity<?> download(@PathVariable UUID id)throws IOException{
-  Artifact a=service.list(id).stream().filter(x->x.getId().equals(id)).findFirst().orElse(null);
-  if(a==null)return ResponseEntity.notFound().build();
+  Artifact a;try{a=service.get(id);}catch(java.util.NoSuchElementException e){return ResponseEntity.notFound().build();}
   URI url=service.signedUrl(a);
   if(url.isAbsolute())return ResponseEntity.status(HttpStatus.FOUND).location(url).build();
   return ResponseEntity.ok().contentType(MediaType.parseMediaType(a.getContentType())).contentLength(a.getSizeBytes())
