@@ -2,6 +2,7 @@ CREATE TABLE forgeci.organizations (
  id UUID PRIMARY KEY,
  name VARCHAR(120) NOT NULL,
  slug VARCHAR(80) NOT NULL,
+ created_by UUID NOT NULL REFERENCES forgeci.users(id),
  created_at TIMESTAMPTZ NOT NULL,
  updated_at TIMESTAMPTZ NOT NULL
 );
