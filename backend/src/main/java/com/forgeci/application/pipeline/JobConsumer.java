@@ -50,7 +50,10 @@ public class JobConsumer {
      if(result.timedOut()){step.timeOut();failureType=JobFailureType.TIMEOUT;failed=true;}
      else if(result.exitCode()==0){step.succeed();}
      else {step.fail();failureType=JobFailureType.TEST_FAILURE;failed=true;}
-    }catch(RuntimeException e){log.warn("Job {} attempt {} execution failed: {}",job.getId(),job.getAttemptNumber(),e.getMessage());if(step.getStatus()==StepRunStatus.RUNNING)step.fail();failureType=JobFailureType.INFRASTRUCTURE_FAILURE;failed=true;}
+    }catch(RuntimeException e){
+      if(job.isCancellationRequested()||run.isCancellationRequested()){cancelStep(step);cancel(job,run);return;}
+      log.warn("Job {} attempt {} execution failed: {}",job.getId(),job.getAttemptNumber(),e.getMessage());if(step.getStatus()==StepRunStatus.RUNNING)step.fail();failureType=JobFailureType.INFRASTRUCTURE_FAILURE;failed=true;
+    }
     steps.save(step);
    }
   }finally{cancellations.unregister(job.getId());}
