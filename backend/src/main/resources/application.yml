@@ -21,3 +21,8 @@ management.endpoint.health.probes.enabled: true
 management.health.livenessstate.enabled: true
 management.health.readinessstate.enabled: true
 server.port: ${BACKEND_PORT:8080}
+forgeci:
+  auth:
+    jwt-secret: ${FORGECI_JWT_SECRET:forgeci-local-development-secret-change-me-32}
+    access-token-seconds: 900
+    refresh-token-days: 30
