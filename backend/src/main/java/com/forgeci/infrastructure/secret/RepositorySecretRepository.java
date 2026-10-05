@@ -1,0 +1,3 @@
+package com.forgeci.infrastructure.secret;
+import com.forgeci.domain.secret.RepositorySecret; import java.util.*; import org.springframework.data.jpa.repository.JpaRepository;
+public interface RepositorySecretRepository extends JpaRepository<RepositorySecret,UUID>{Optional<RepositorySecret> findByRepositoryIdAndName(UUID repositoryId,String name);List<RepositorySecret> findAllByRepositoryId(UUID repositoryId);}
