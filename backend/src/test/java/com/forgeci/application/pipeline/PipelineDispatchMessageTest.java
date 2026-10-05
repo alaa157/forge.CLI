@@ -6,16 +6,24 @@ import org.junit.jupiter.api.Test;
 
 class PipelineDispatchMessageTest {
     @Test
-    void carriesMessageAndDispatchIds() {
-        UUID m = UUID.randomUUID();
+    void carriesStableMessageAndDispatchIds() {
         UUID d = UUID.randomUUID();
         UUID p = UUID.randomUUID();
 
-        var message = new PipelineDispatchMessage(m, d, p);
+        var message = new PipelineDispatchMessage(d, d, p);
 
-        assertEquals(m, message.messageId());
+        assertEquals(d, message.messageId());
         assertEquals(d, message.dispatchId());
         assertEquals(p, message.pipelineRunId());
-        assertNotNull(message.messageId());
+    }
+
+    @Test
+    void derivesMessageIdForLegacyPayload() {
+        UUID d = UUID.randomUUID();
+        UUID p = UUID.randomUUID();
+
+        var message = new PipelineDispatchMessage(null, d, p);
+
+        assertEquals(d, message.messageId());
     }
 }
