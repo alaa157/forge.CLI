@@ -11,6 +11,7 @@ export type LogChunk={id:string;sequence:number;stream:"stdout"|"stderr";content
 export const api={
   runs:(repositoryId:string)=>request<Run[]>(`/api/v1/runs?repositoryId=${encodeURIComponent(repositoryId)}`),
   run:(id:string)=>request<Run>(`/api/v1/runs/${id}`),
+  jobs:(id:string)=>request<Job[]>(`/api/v1/runs/${id}/jobs`),
   cancel:(id:string)=>request<Run>(`/api/v1/runs/${id}/cancel`,{method:"POST"}),
   retry:(id:string)=>request<Run>(`/api/v1/runs/${id}/retry`,{method:"POST"}),
   job:(id:string)=>request<Job>(`/api/v1/jobs/${id}`),
