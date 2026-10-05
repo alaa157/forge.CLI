@@ -50,6 +50,7 @@ public class StepRun {
     public void cancel(){transition(StepRunStatus.CANCELLED);finishedAt=Instant.now();}
     public void timeOut(){transition(StepRunStatus.TIMED_OUT);finishedAt=Instant.now();}
     public void skip(){transition(StepRunStatus.SKIPPED);finishedAt=Instant.now();}
+    public void resetForRetry(){ if(status==StepRunStatus.PENDING) return; status=StepRunStatus.PENDING; startedAt=null; finishedAt=null; }
     private void transition(StepRunStatus target){if(status!=StepRunStatus.PENDING&&status!=StepRunStatus.RUNNING)throw new IllegalStateException("Invalid step run transition: "+status+" -> "+target); if(status==StepRunStatus.PENDING&&target!=StepRunStatus.RUNNING&&target!=StepRunStatus.SKIPPED&&target!=StepRunStatus.CANCELLED)throw new IllegalStateException("Invalid step run transition: "+status+" -> "+target); if(status==StepRunStatus.RUNNING&&(target!=StepRunStatus.SUCCEEDED&&target!=StepRunStatus.FAILED&&target!=StepRunStatus.CANCELLED&&target!=StepRunStatus.TIMED_OUT))throw new IllegalStateException("Invalid step run transition: "+status+" -> "+target);status=target;}
     public UUID getId(){return id;} public UUID getJobRunId(){return jobRunId;} public int getPosition(){return position;} public String getCommand(){return command;} public StepRunStatus getStatus(){return status;} public Instant getCreatedAt(){return createdAt;} public Instant getStartedAt(){return startedAt;} public Instant getFinishedAt(){return finishedAt;}
 }
