@@ -1,0 +1,32 @@
+# Operating system
+.DS_Store
+Thumbs.db
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+logs/
+
+# Build outputs
+target/
+build/
+dist/
+out/
+node_modules/
+
+# Test and coverage outputs
+coverage/
+*.exec
+
+# Temporary files
+tmp/
+.temp/
