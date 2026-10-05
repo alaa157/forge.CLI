@@ -28,6 +28,7 @@ public class DockerJobExecutor implements JobExecutor {
     private final String dockerBinary;
     private final WorkspaceManager workspaces;
     private final LogChunkService logs;
+    private final JobCancellationRegistry cancellations;
 
     public DockerJobExecutor(
             @Value("${forgeci.worker.docker-binary:docker}") String dockerBinary,
@@ -36,6 +37,7 @@ public class DockerJobExecutor implements JobExecutor {
         this.dockerBinary = dockerBinary;
         this.workspaces = workspaces;
         this.logs = logs;
+        this.cancellations = cancellations;
     }
 
     @Override
@@ -82,6 +84,7 @@ public class DockerJobExecutor implements JobExecutor {
             args.add(request.command());
 
             Process process = new ProcessBuilder(args).redirectErrorStream(false).start();
+            cancellations.registerProcess(request.jobId(), process);
             ExecutorService io = Executors.newFixedThreadPool(2);
             AtomicLong sequence = new AtomicLong(logs.nextSequence(request.jobId()));
             Future<?> out = io.submit(() -> capture(process.getInputStream(), request.jobId(), "stdout", sequence));
@@ -96,6 +99,7 @@ public class DockerJobExecutor implements JobExecutor {
                 return new ExecutionResult(process.exitValue(), false);
             } finally {
                 io.shutdownNow();
+                cancellations.unregister(request.jobId());
             }
         } catch (IOException e) {
             throw new IllegalStateException("Unable to start container runtime", e);
