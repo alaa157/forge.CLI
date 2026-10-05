@@ -128,3 +128,15 @@ The project roadmap is maintained in `docs/ROADMAP.md`.
 ## Project Direction
 
 ForgeCI is intentionally being built as a production-oriented CI/CD platform rather than a simple CI demo. The implementation emphasizes durable state, idempotent message processing, immutable execution context, isolated execution, bounded resource usage, observable workers, secure artifact/test ingestion, and operationally useful test intelligence.
+
+
+### Phase 18 — Caching
+Repository-scoped execution caches with bounded size, TTL, safe workspace-relative paths, cache restore before jobs, and save after successful execution.
+
+### Phase 19 — Secrets
+Encrypted organization/repository secrets, explicit per-job secret declarations, runtime-only injection, secret-name-only API responses, and log masking.
+
+### Phase 20 — Security Hardening
+Non-root Docker execution by default, existing container hardening controls, SSRF/outbound URL validation, workspace path confinement, and a documented security threat model.
+
+Security details: `docs/security/threat-model.md`.

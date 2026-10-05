@@ -32,6 +32,15 @@ public class JobRun {
     @Column(name="artifact_paths", nullable=false, columnDefinition="text")
     private String artifactPaths = "[]";
 
+    @Column(name="cache_key")
+    private String cacheKey;
+
+    @Column(name="cache_paths", nullable=false, columnDefinition="text")
+    private String cachePaths = "[]";
+
+    @Column(name="secret_names", nullable=false, columnDefinition="text")
+    private String secretNames = "[]";
+
     @Column(nullable=false, length=10)
     private String priority = "NORMAL";
 
@@ -39,7 +48,6 @@ public class JobRun {
     @Column(nullable=false, length=20)
     private JobRunStatus status;
 
-    /** Phase 17.2 — attempt number (1-based). */
     @Column(name="attempt_number", nullable=false)
     private int attemptNumber = 1;
 
@@ -89,6 +97,8 @@ public class JobRun {
         this.commands = commands == null ? "[]" : commands;
         this.dependsOn = dependsOn == null ? "[]" : dependsOn;
         this.artifactPaths = "[]";
+        this.cachePaths = "[]";
+        this.secretNames = "[]";
         this.priority = "NORMAL";
         this.status = JobRunStatus.PENDING;
         this.attemptNumber = 1;
@@ -107,30 +117,14 @@ public class JobRun {
     public void skip() { transition(JobRunStatus.SKIPPED); finishedAt = Instant.now(); clearLease(); }
 
     public void requestCancellation() { this.cancellationRequested = true; }
-
     public void recordFailure(FailureType type) { this.lastFailureType = type; }
-
     public void setMaxRetries(int maxRetries) { this.maxRetries = Math.max(0, maxRetries); }
 
-    /**
-     * Phase 17.2/17.3 — requeue a failed job for another attempt when policy allows.
-     * Returns true if a new attempt was started.
-     */
     public boolean scheduleRetryIfEligible() {
-        if (status != JobRunStatus.FAILED && status != JobRunStatus.TIMED_OUT) {
-            return false;
-        }
-        if (cancellationRequested) {
-            return false;
-        }
-        if (lastFailureType != null && !lastFailureType.isRetryable()) {
-            return false;
-        }
-        if (attemptNumber > maxRetries) {
-            return false;
-        }
-        // attemptNumber is current finished attempt; next attempt = attemptNumber + 1
-        // allowed when attemptNumber <= maxRetries (e.g. maxRetries=2 allows attempts 1,2,3)
+        if (status != JobRunStatus.FAILED && status != JobRunStatus.TIMED_OUT) return false;
+        if (cancellationRequested) return false;
+        if (lastFailureType != null && !lastFailureType.isRetryable()) return false;
+        if (attemptNumber > maxRetries) return false;
         this.attemptNumber = attemptNumber + 1;
         this.attemptId = UUID.randomUUID();
         this.startedAt = null;
@@ -146,9 +140,7 @@ public class JobRun {
         this.leaseExpiresAt = expiresAt;
     }
 
-    public void renewLease(Instant expiresAt) {
-        this.leaseExpiresAt = expiresAt;
-    }
+    public void renewLease(Instant expiresAt) { this.leaseExpiresAt = expiresAt; }
 
     public void clearExpiredLeaseAndRequeue() {
         if (status != JobRunStatus.RUNNING) {
@@ -181,25 +173,31 @@ public class JobRun {
         };
     }
 
-    public UUID getId(){return id;}
-    public UUID getPipelineRunId(){return pipelineRunId;}
-    public String getName(){return name;}
-    public String getImage(){return image;}
-    public String getCommands(){return commands;}
-    public String getDependsOn(){return dependsOn;}
-    public String getArtifactPaths(){return artifactPaths;}
-    public void setArtifactPaths(String artifactPaths){this.artifactPaths=artifactPaths==null?"[]":artifactPaths;}\n    public String getCacheKey(){return cacheKey;}\n    public void setCacheKey(String cacheKey){this.cacheKey=cacheKey;}\n    public String getCachePaths(){return cachePaths;}\n    public void setCachePaths(String cachePaths){this.cachePaths=cachePaths==null?"[]":cachePaths;}\n    public String getSecretNames(){return secretNames;}\n    public void setSecretNames(String secretNames){this.secretNames=secretNames==null?"[]":secretNames;}
-    public String getPriority(){return priority;}
-    public JobRunStatus getStatus(){return status;}
-    public int getAttemptNumber(){return attemptNumber;}
-    public UUID getAttemptId(){return attemptId;}
-    public FailureType getLastFailureType(){return lastFailureType;}
-    public boolean isCancellationRequested(){return cancellationRequested;}
-    public int getMaxRetries(){return maxRetries;}
-    public UUID getLeaseId(){return leaseId;}
-    public UUID getLeaseWorkerId(){return leaseWorkerId;}
-    public Instant getLeaseExpiresAt(){return leaseExpiresAt;}
-    public Instant getCreatedAt(){return createdAt;}
-    public Instant getStartedAt(){return startedAt;}
-    public Instant getFinishedAt(){return finishedAt;}
+    public UUID getId() { return id; }
+    public UUID getPipelineRunId() { return pipelineRunId; }
+    public String getName() { return name; }
+    public String getImage() { return image; }
+    public String getCommands() { return commands; }
+    public String getDependsOn() { return dependsOn; }
+    public String getArtifactPaths() { return artifactPaths; }
+    public void setArtifactPaths(String artifactPaths) { this.artifactPaths = artifactPaths == null ? "[]" : artifactPaths; }
+    public String getCacheKey() { return cacheKey; }
+    public void setCacheKey(String cacheKey) { this.cacheKey = cacheKey; }
+    public String getCachePaths() { return cachePaths; }
+    public void setCachePaths(String cachePaths) { this.cachePaths = cachePaths == null ? "[]" : cachePaths; }
+    public String getSecretNames() { return secretNames; }
+    public void setSecretNames(String secretNames) { this.secretNames = secretNames == null ? "[]" : secretNames; }
+    public String getPriority() { return priority; }
+    public JobRunStatus getStatus() { return status; }
+    public int getAttemptNumber() { return attemptNumber; }
+    public UUID getAttemptId() { return attemptId; }
+    public FailureType getLastFailureType() { return lastFailureType; }
+    public boolean isCancellationRequested() { return cancellationRequested; }
+    public int getMaxRetries() { return maxRetries; }
+    public UUID getLeaseId() { return leaseId; }
+    public UUID getLeaseWorkerId() { return leaseWorkerId; }
+    public Instant getLeaseExpiresAt() { return leaseExpiresAt; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getStartedAt() { return startedAt; }
+    public Instant getFinishedAt() { return finishedAt; }
 }

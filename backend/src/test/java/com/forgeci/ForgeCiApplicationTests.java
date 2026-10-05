@@ -9,7 +9,7 @@ import com.forgeci.infrastructure.repository.RepositoryConnectionRepository;
 import com.forgeci.infrastructure.organization.GitHubConnectionRepository;
 import com.forgeci.infrastructure.user.UserRepository;
 import com.forgeci.infrastructure.webhook.WebhookDeliveryRepository;
-import com.forgeci.infrastructure.pipeline.*;
+import com.forgeci.infrastructure.pipeline.*;\nimport com.forgeci.infrastructure.secret.SecretRepository;\nimport com.forgeci.infrastructure.secret.RepositorySecretRepository;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -39,7 +39,7 @@ class ForgeCiApplicationTests {
     @MockBean LogChunkRepository logChunkRepository;
     @MockBean GitHubConnectionService gitHubConnectionService;
     @MockBean JobExecutor jobExecutor;
-    @MockBean RabbitTemplate rabbitTemplate;
+    @MockBean RabbitTemplate rabbitTemplate;\n    @MockBean SecretRepository secretRepository;\n    @MockBean RepositorySecretRepository repositorySecretRepository;
 
     @Test void contextLoads() {}
 }

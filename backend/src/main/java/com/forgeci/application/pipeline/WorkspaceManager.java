@@ -9,7 +9,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class WorkspaceManager {
-    private final String gitBinary;\n    private final com.forgeci.application.security.OutboundUrlPolicy outboundUrls;
+    private final String gitBinary;
+    private final com.forgeci.application.security.OutboundUrlPolicy outboundUrls;
 
     public WorkspaceManager(@Value("${forgeci.worker.git-binary:git}") String gitBinary, com.forgeci.application.security.OutboundUrlPolicy outboundUrls){this.gitBinary=gitBinary;this.outboundUrls=outboundUrls;}
 

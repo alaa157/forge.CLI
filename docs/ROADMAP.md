@@ -133,3 +133,29 @@ Phase 11 provides durable chunked logs plus a live WebSocket/STOMP stream. Objec
 - Automatic retries are limited to infrastructure/worker failures and honor job-level then pipeline-level retry configuration.
 - Test failures and timeouts are not automatically retried by default.
 - Retry resets the job's step state and creates a fresh attempt identity.
+
+
+## Phase 18 status
+
+- Repository-scoped filesystem cache with SHA-256 cache keys.
+- Configurable cache size limit and TTL.
+- Cache restore before execution and save after successful execution.
+- Cache paths are constrained to the disposable workspace; cache namespaces are repository-scoped.
+- Pipeline job cache metadata is snapshotted into the JobRun.
+
+## Phase 19 status
+
+- Organization and repository secret models with encrypted ciphertext at rest.
+- AES-256-GCM field encryption using the existing environment-provided master key.
+- Secret values are never returned by API responses; only secret names are listed.
+- Repository secrets override organization secrets with the same name.
+- Pipeline jobs can explicitly declare secret names and receive resolved values only at execution time.
+- Secret values are masked before stdout/stderr is persisted.
+
+## Phase 20 status
+
+- Threat model documented for malicious repositories/PRs, container escape, secret exfiltration, resource exhaustion, SSRF, webhook forgery, token theft, artifact poisoning, dependency attacks, log injection, and path traversal.
+- Docker execution defaults to a non-root UID while retaining existing read-only root filesystem, dropped capabilities, no-new-privileges, network isolation, PID/resource limits, and timeouts.
+- Outbound URL policy blocks localhost, loopback, link-local, RFC1918/site-local, and cloud-metadata destinations; GitHub clone URLs are validated through it.
+- Artifact and cache paths remain workspace-confined.
+- Dependency security tooling is documented as an optional CI extension rather than silently bundled into production execution.

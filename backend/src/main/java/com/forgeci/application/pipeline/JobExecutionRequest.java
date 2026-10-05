@@ -9,7 +9,14 @@ public record JobExecutionRequest(
         UUID jobId, UUID repositoryId, String cloneUrl, String githubToken, String commitSha,
         String image, String command, Map<String, String> environment,
         Duration timeout, int cpuLimit, long memoryBytes, long pidsLimit,
-        List<String> artifactPaths) {
+        List<String> artifactPaths, String cacheKey, List<String> cachePaths) {
+    public JobExecutionRequest(
+            UUID jobId, UUID repositoryId, String cloneUrl, String githubToken, String commitSha,
+            String image, String command, Map<String, String> environment, Duration timeout,
+            int cpuLimit, long memoryBytes, long pidsLimit, List<String> artifactPaths) {
+        this(jobId, repositoryId, cloneUrl, githubToken, commitSha, image, command, environment, timeout, cpuLimit, memoryBytes, pidsLimit, artifactPaths, null, List.of());
+    }
+
     public JobExecutionRequest {
         if (jobId == null || repositoryId == null) throw new IllegalArgumentException("job and repository IDs are required");
         if (cloneUrl == null || cloneUrl.isBlank() || githubToken == null || githubToken.isBlank()) throw new IllegalArgumentException("repository credentials are required");
@@ -19,6 +26,8 @@ public record JobExecutionRequest(
         if (timeout == null || timeout.isNegative() || timeout.isZero()) throw new IllegalArgumentException("timeout must be positive");
         if (cpuLimit <= 0 || memoryBytes <= 0 || pidsLimit <= 0) throw new IllegalArgumentException("resource limits must be positive");
         environment = environment == null ? Map.of() : Map.copyOf(environment);
-        artifactPaths = artifactPaths == null ? List.of() : List.copyOf(artifactPaths);\n        cachePaths = cachePaths == null ? List.of() : List.copyOf(cachePaths);\n        if (cacheKey != null && cacheKey.length() > 512) throw new IllegalArgumentException("cacheKey is too long");
+        artifactPaths = artifactPaths == null ? List.of() : List.copyOf(artifactPaths);
+        cachePaths = cachePaths == null ? List.of() : List.copyOf(cachePaths);
+        if (cacheKey != null && cacheKey.length() > 512) throw new IllegalArgumentException("cacheKey is too long");
     }
 }

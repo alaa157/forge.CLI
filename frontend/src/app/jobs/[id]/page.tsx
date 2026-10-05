@@ -1,5 +1,110 @@
 "use client";
-import {useEffect,useRef,useState} from "react";import {useParams} from "next/navigation";import {AppShell} from "../../../components/app-shell";import {api,Job,LogChunk} from "../../../lib/api";
-const wsUrl=process.env.NEXT_PUBLIC_WS_URL??"ws://localhost:8080/ws";
-export default function JobPage(){const {id}=useParams<{id:string}>();const [job,setJob]=useState<Job>();const [logs,setLogs]=useState<LogChunk[]>([]);const [live,setLive]=useState(false);const end=useRef<HTMLDivElement>(null);
-useEffect(()=>{api.job(id).then(setJob).catch(()=>{});api.logs(id).then(setLogs).catch(()=>{});const timer=setInterval(()=>{api.job(id).then(setJob).catch(()=>{});api.logs(id).then(setLogs).catch(()=>{})},5000);let socket:WebSocket|undefined;try{socket=new WebSocket(wsUrl);socket.onopen=()=>{setLive(true);socket?.send(`CONNECT\\naccept-version:1.2\\nhost:forgeci\\n\\n\\0`);setTimeout(()=>socket?.send(`SUBSCRIBE\\nid:job-${id}\\ndestination:/topic/jobs/${id}/logs\\n\\n\\0`),250)};socket.onmessage=e=>{const body=String(e.data).split("\\n\\n")[1]?.replace(/\\0$/,"");if(!body)return;try{const chunk=JSON.parse(body) as LogChunk;setLogs(x=>x.some(v=>v.id===chunk.id)?x:[...x,chunk].slice(-1000))}catch{}};socket.onclose=()=>setLive(false)}catch{}return()=>{clearInterval(timer);socket?.close()}},[id]);useEffect(()=>end.current?.scrollIntoView({behavior:"smooth"}),[logs]);return <AppShell><p className="font-mono text-xs text-zinc-500">{id}</p><div className="mt-2 flex items-center justify-between"><div><h1 className="text-3xl font-semibold">{job?.name??"Job"}</h1><p className="mt-2 text-zinc-500">{job?.status??"Loading"} · {job?.image}</p></div><span className="rounded-full border border-zinc-700 px-3 py-1 text-xs">{live?"LIVE":"RECOVERY"}</span></div><div className="mt-8 overflow-hidden rounded-xl border border-zinc-800 bg-black"><div className="border-b border-zinc-800 px-5 py-3 text-xs text-zinc-500">JOB OUTPUT · WebSocket live stream with HTTP recovery</div><pre className="max-h-[60vh] overflow-auto p-5 font-mono text-xs leading-6 text-zinc-300">{logs.map(x=><span key={x.id} className={x.stream==="stderr"?"text-red-300":""}>{x.content}</span>)}<div ref={end}/></pre></div></AppShell>}
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import { AppShell } from "../../../components/app-shell";
+import { api, Job, LogChunk } from "../../../lib/api";
+
+const wsUrl = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
+
+function formatDuration(startedAt?: string, finishedAt?: string) {
+  if (!startedAt) return "00:00:00";
+  const start = new Date(startedAt).getTime();
+  const end = finishedAt ? new Date(finishedAt).getTime() : Date.now();
+  const s = Math.max(0, Math.floor((end - start) / 1000));
+  const hh = String(Math.floor(s / 3600)).padStart(2, "0");
+  const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0");
+  const ss = String(s % 60).padStart(2, "0");
+  return `${hh}:${mm}:${ss}`;
+}
+
+export default function JobPage() {
+  const { id } = useParams<{ id: string }>();
+  const [job, setJob] = useState<Job>();
+  const [logs, setLogs] = useState<LogChunk[]>([]);
+  const [live, setLive] = useState(false);
+  const [now, setNow] = useState(Date.now());
+  const end = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    api.job(id).then(setJob).catch(() => {});
+    api.logs(id).then(setLogs).catch(() => {});
+    const timer = setInterval(() => {
+      api.job(id).then(setJob).catch(() => {});
+      api.logs(id).then(setLogs).catch(() => {});
+      setNow(Date.now());
+    }, 2000);
+    let socket: WebSocket | undefined;
+    try {
+      socket = new WebSocket(wsUrl);
+      socket.onopen = () => {
+        setLive(true);
+        socket?.send(`CONNECT\naccept-version:1.2\nhost:forgeci\n\n\0`);
+        setTimeout(
+          () =>
+            socket?.send(
+              `SUBSCRIBE\nid:job-${id}\ndestination:/topic/jobs/${id}/logs\n\n\0`,
+            ),
+          250,
+        );
+      };
+      socket.onmessage = (e) => {
+        const body = String(e.data).split("\n\n")[1]?.replace(/\0$/, "");
+        if (!body) return;
+        try {
+          const chunk = JSON.parse(body) as LogChunk;
+          setLogs((x) => (x.some((v) => v.id === chunk.id) ? x : [...x, chunk].slice(-1000)));
+        } catch {
+          /* ignore non-json frames */
+        }
+      };
+      socket.onclose = () => setLive(false);
+    } catch {
+      /* WS optional */
+    }
+    return () => {
+      clearInterval(timer);
+      socket?.close();
+    };
+  }, [id]);
+
+  useEffect(() => {
+    end.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
+
+  const duration = formatDuration(job?.startedAt, job?.finishedAt);
+  // keep now in deps so RUNNING timer ticks
+  void now;
+
+  return (
+    <AppShell>
+      <p className="font-mono text-xs text-zinc-500">{id}</p>
+      <div className="mt-2 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold">{job?.name ?? "Job"}</h1>
+          <p className="mt-2 text-zinc-500">
+            {job?.status ?? "Loading"} · {duration} · attempt {job?.attemptNumber ?? 1}
+            {job?.maxRetries ? ` / ${job.maxRetries + 1}` : ""}
+            {job?.lastFailureType ? ` · ${job.lastFailureType}` : ""}
+          </p>
+          <p className="mt-1 font-mono text-xs text-zinc-600">{job?.image}</p>
+        </div>
+        <span className="rounded-full border border-zinc-700 px-3 py-1 text-xs">
+          {live ? "LIVE" : "POLL"}
+        </span>
+      </div>
+      <div className="mt-8 overflow-hidden rounded-xl border border-zinc-800 bg-black">
+        <div className="border-b border-zinc-800 px-5 py-3 text-xs text-zinc-500">
+          JOB OUTPUT · WebSocket live stream with HTTP recovery
+        </div>
+        <pre className="max-h-[60vh] overflow-auto p-5 font-mono text-xs leading-6 text-zinc-300">
+          {logs.map((x) => (
+            <span key={x.id} className={x.stream === "stderr" ? "text-red-300" : ""}>
+              {x.content}
+            </span>
+          ))}
+          <div ref={end} />
+        </pre>
+      </div>
+    </AppShell>
+  );
+}

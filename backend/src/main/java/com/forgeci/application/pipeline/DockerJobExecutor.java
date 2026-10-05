@@ -1,7 +1,9 @@
 package com.forgeci.application.pipeline;
 
 import com.forgeci.application.artifact.ArtifactCollector;
-import com.forgeci.application.artifact.ArtifactService;\nimport com.forgeci.application.cache.CacheService;\nimport com.forgeci.application.security.SecretMasker;
+import com.forgeci.application.artifact.ArtifactService;
+import com.forgeci.application.cache.CacheService;
+import com.forgeci.application.security.SecretMasker;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,18 +15,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-/** Phase 10/17: checkout exact commit, hardened container, stop-on-fail, cancelable process. */
 @Service
 @Primary
 public class DockerJobExecutor implements JobExecutor {
@@ -32,7 +28,9 @@ public class DockerJobExecutor implements JobExecutor {
     private final WorkspaceManager workspaces;
     private final LogChunkService logs;
     private final ArtifactCollector artifactCollector;
-    private final ArtifactService artifactService;\n    private final CacheService cacheService;\n    private final boolean nonRoot;
+    private final ArtifactService artifactService;
+    private final CacheService cacheService;
+    private final boolean nonRoot;
     private final JobCancellationRegistry cancellations;
 
     public DockerJobExecutor(
@@ -41,13 +39,17 @@ public class DockerJobExecutor implements JobExecutor {
             LogChunkService logs,
             ArtifactCollector artifactCollector,
             ArtifactService artifactService,
-            JobCancellationRegistry cancellations) {
+            CacheService cacheService,
+            JobCancellationRegistry cancellations,
+            @Value("${forgeci.worker.non-root:true}") boolean nonRoot) {
         this.dockerBinary = dockerBinary;
         this.workspaces = workspaces;
         this.logs = logs;
         this.artifactCollector = artifactCollector;
-        this.artifactService = artifactService;\n        this.cacheService = cacheService;\n        this.nonRoot = nonRoot;
+        this.artifactService = artifactService;
+        this.cacheService = cacheService;
         this.cancellations = cancellations;
+        this.nonRoot = nonRoot;
     }
 
     @Override
@@ -55,13 +57,19 @@ public class DockerJobExecutor implements JobExecutor {
         Path workspace = workspaces.checkout(request.cloneUrl(), request.commitSha(), request.githubToken());
         cancellations.register(request.jobId());
         try {
+            cacheService.restore(request.repositoryId().toString(), request.cacheKey(), workspace, request.cachePaths());
+
             List<String> args = new ArrayList<>();
             args.add(dockerBinary);
             args.add("run");
             args.add("--rm");
             args.add("--network");
             args.add("none");
-            args.add("--read-only");\n            if (nonRoot) { args.add("--user"); args.add("1000:1000"); }
+            args.add("--read-only");
+            if (nonRoot) {
+                args.add("--user");
+                args.add("1000:1000");
+            }
             args.add("--cap-drop");
             args.add("ALL");
             args.add("--security-opt");
@@ -82,6 +90,7 @@ public class DockerJobExecutor implements JobExecutor {
             args.add("forgeci.job=" + request.jobId());
             args.add("--label");
             args.add("forgeci.commit=" + request.commitSha());
+
             for (Map.Entry<String, String> e : request.environment().entrySet()) {
                 if (e.getKey() != null && e.getValue() != null
                         && e.getKey().matches("[A-Za-z_][A-Za-z0-9_]*")) {
@@ -89,17 +98,25 @@ public class DockerJobExecutor implements JobExecutor {
                     args.add(e.getKey() + "=" + e.getValue());
                 }
             }
+
             args.add(request.image());
             args.add("sh");
             args.add("-lc");
             args.add(request.command());
 
-            Process process = new ProcessBuilder(args).redirectErrorStream(false).start();
+            ProcessBuilder builder = new ProcessBuilder(args).redirectErrorStream(false);
+            for (Map.Entry<String, String> e : request.environment().entrySet()) {
+                if (e.getKey() != null && e.getValue() != null && e.getKey().matches("[A-Za-z_][A-Za-z0-9_]*")) {
+                    builder.environment().put(e.getKey(), e.getValue());
+                }
+            }
+            Process process = builder.start();
             cancellations.registerProcess(request.jobId(), process);
             ExecutorService io = Executors.newFixedThreadPool(2);
             AtomicLong sequence = new AtomicLong(logs.nextSequence(request.jobId()));
             Future<?> out = io.submit(() -> capture(process.getInputStream(), request.jobId(), "stdout", sequence, request.environment().values()));
             Future<?> err = io.submit(() -> capture(process.getErrorStream(), request.jobId(), "stderr", sequence, request.environment().values()));
+
             try {
                 ExecutionResult result;
                 if (!process.waitFor(request.timeout().toMillis(), TimeUnit.MILLISECONDS)) {
@@ -111,6 +128,9 @@ public class DockerJobExecutor implements JobExecutor {
                     result = new ExecutionResult(process.exitValue(), false);
                 }
                 collectArtifacts(request, workspace);
+                if (result.exitCode() == 0 && !result.timedOut()) {
+                    cacheService.save(request.repositoryId().toString(), request.cacheKey(), workspace, request.cachePaths());
+                }
                 return result;
             } finally {
                 io.shutdownNow();
@@ -129,9 +149,7 @@ public class DockerJobExecutor implements JobExecutor {
     }
 
     private void collectArtifacts(JobExecutionRequest request, Path workspace) {
-        if (request.artifactPaths().isEmpty()) {
-            return;
-        }
+        if (request.artifactPaths().isEmpty()) return;
         try {
             var zip = artifactCollector.collect(workspace, request.artifactPaths());
             if (zip.isPresent()) {
@@ -143,7 +161,9 @@ public class DockerJobExecutor implements JobExecutor {
             }
         } catch (Exception e) {
             logs.append(request.jobId(), "stderr", logs.nextSequence(request.jobId()),
-                    "[forgeci] artifact collection failed: " + e.getMessage() + System.lineSeparator());
+                    "[forgeci] artifact collection failed: "
+                            + SecretMasker.mask(e.getMessage(), request.environment().values())
+                            + System.lineSeparator());
         }
     }
 
@@ -151,10 +171,12 @@ public class DockerJobExecutor implements JobExecutor {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                logs.append(jobId, stream, sequence.getAndIncrement(), SecretMasker.mask(line, secrets) + System.lineSeparator());
+                logs.append(jobId, stream, sequence.getAndIncrement(),
+                        SecretMasker.mask(line, secrets) + System.lineSeparator());
             }
         } catch (IOException e) {
-            logs.append(jobId, stream, sequence.getAndIncrement(), "[log capture failed]" + System.lineSeparator());
+            logs.append(jobId, stream, sequence.getAndIncrement(),
+                    "[log capture failed]" + System.lineSeparator());
         }
     }
 }
