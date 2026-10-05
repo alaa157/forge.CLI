@@ -24,15 +24,16 @@ server.port: ${BACKEND_PORT:8080}
 forgeci:
   worker:
     docker-binary: ${FORGECI_WORKER_DOCKER_BINARY:docker}
-    git-binary: ${FORGECI_WORKER_GIT_BINARY:git}
     step-timeout-seconds: ${FORGECI_WORKER_STEP_TIMEOUT_SECONDS:1800}
-    cpu-limit: ${FORGECI_WORKER_CPU_LIMIT:2}
-    memory-bytes: ${FORGECI_WORKER_MEMORY_BYTES:2147483648}
-    pids-limit: ${FORGECI_WORKER_PIDS_LIMIT:256}
-  websocket:
-    allowed-origins: ${FORGECI_WEBSOCKET_ALLOWED_ORIGINS:http://localhost:3000}
+    unhealthy-after-seconds: ${FORGECI_WORKER_UNHEALTHY_AFTER_SECONDS:30}
+    lease-seconds: ${FORGECI_WORKER_LEASE_SECONDS:60}
+    health-check-ms: ${FORGECI_WORKER_HEALTH_CHECK_MS:10000}
+  scheduler:
+    global-concurrency: ${FORGECI_SCHEDULER_GLOBAL_CONCURRENCY:20}
+    organization-concurrency: ${FORGECI_SCHEDULER_ORG_CONCURRENCY:5}
+    repository-concurrency: ${FORGECI_SCHEDULER_REPO_CONCURRENCY:2}
   pipeline:
-    scheduler-delay-ms: ${FORGECI_PIPELINE_SCHEDULER_DELAY_MS:1000}
+    scheduler-delay-ms: ${FORGECI_PIPELINE_SCHEDULER_DELAY_MS:500}
     publisher-delay-ms: ${FORGECI_PIPELINE_PUBLISHER_DELAY_MS:500}
   auth:
     jwt-secret: ${FORGECI_JWT_SECRET:forgeci-local-development-secret-change-me-32}
