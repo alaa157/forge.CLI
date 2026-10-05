@@ -40,7 +40,7 @@ CREATE TABLE forgeci.step_runs (
  id UUID PRIMARY KEY,
  job_run_id UUID NOT NULL REFERENCES forgeci.job_runs(id) ON DELETE CASCADE,
  position INTEGER NOT NULL,
- command VARCHAR(255) NOT NULL,
+ command VARCHAR(8192) NOT NULL,
  status VARCHAR(20) NOT NULL,
  created_at TIMESTAMPTZ NOT NULL,
  started_at TIMESTAMPTZ,
