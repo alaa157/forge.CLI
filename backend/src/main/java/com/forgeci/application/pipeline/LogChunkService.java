@@ -5,6 +5,7 @@ import com.forgeci.infrastructure.pipeline.LogChunkRepository;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,6 @@ public class LogChunkService {
     @Transactional(readOnly=true)
     public List<LogChunk> list(UUID jobRunId,int tail,Long after){
         if(tail<=0||tail>5000)throw new IllegalArgumentException("tail must be between 1 and 5000");
-        return after==null?repository.findTail(jobRunId,tail):repository.findAfter(jobRunId,after,Pageable.ofSize(tail));
+        return after==null?repository.findTail(jobRunId,tail):repository.findAfter(jobRunId,after,PageRequest.of(0,tail));
     }
 }
