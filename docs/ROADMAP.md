@@ -7,38 +7,36 @@ The repository follows the phased implementation plan in `ForgeCI_ROADMAP.md`.
 - Phase 1 — Foundation
 - Phase 2 — Authentication and Users
 - Phase 3 — Organizations and Repositories
-- **Phase 4 — Pipeline Configuration**
+- Phase 4 — Pipeline Configuration
+- **Phase 5 — Pipeline Domain Model**
 
-## Phase 4 status
+## Phase 5 status
 
-### Task 4.1 — Pipeline Schema
-- [x] version, pipeline, name, jobs
-- [x] image, commands
-- [x] depends_on, environment, timeout, retries
-- [x] artifacts, cache, working_directory
-- [x] JSON Schema and example configuration
+### Task 5.1 — PipelineRun
+- [x] explicit execution statuses
+- [x] legal state transitions
+- [x] optimistic locking version
+- [x] lifecycle timestamps
 
-### Task 4.2 — YAML Parser
-- [x] safe SnakeYAML constructor
-- [x] typed domain conversion
-- [x] duplicate-key rejection
-- [x] alias disabling
-- [x] nesting and configuration-size limits
-- [x] unknown-field rejection
+### Task 5.2 — JobRun
+- [x] explicit job statuses
+- [x] legal state transitions
+- [x] optimistic locking version
+- [x] lifecycle timestamps
 
-### Task 4.3 — Pipeline Validation
-- [x] required fields
-- [x] duplicate/unknown dependencies
-- [x] dependency cycles
-- [x] timeout/retry limits
-- [x] environment validation
-- [x] artifact/cache/workspace path safety
-- [x] job and configuration limits
+### Task 5.3 — Execution Hierarchy
+- [x] PipelineRun → JobRun → StepRun persistence model
+- [x] ordered step commands
+- [x] foreign-key and uniqueness constraints
 
-### Task 4.4 — DAG Engine
-- [x] dependency graph
-- [x] dependent graph
-- [x] deterministic topological ordering
-- [x] cycle rejection
+### Task 5.4 — Immutable Execution Snapshot
+- [x] commit SHA
+- [x] branch
+- [x] trigger
+- [x] original pipeline YAML
+- [x] resolved pipeline definition
+- [x] resolved DAG/job graph
+- [x] ForgeCI version
+- [x] snapshot copied into JobRun/StepRun records
 
-Phase 4 intentionally does not implement pipeline persistence, webhook-triggered runs, scheduling, or execution; those belong to later phases.
+Phase 5 establishes durable execution state and state-machine boundaries. Webhooks, scheduling, worker execution, retries across attempts, cancellation orchestration, and runtime infrastructure remain later-phase work.
