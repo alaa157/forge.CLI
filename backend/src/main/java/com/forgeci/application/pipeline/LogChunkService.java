@@ -19,8 +19,10 @@ public class LogChunkService {
 
     public LogChunkService(LogChunkRepository repository,SimpMessagingTemplate messaging){this.repository=repository;this.messaging=messaging;}
 
+    public long nextSequence(UUID jobRunId){return repository.nextSequence(jobRunId);}
+
     @Transactional
-    public void append(UUID jobRunId,String stream,long sequence,String content){
+    public synchronized void append(UUID jobRunId,String stream,long sequence,String content){
         if(content==null||content.isEmpty())return;
         String remaining=content; long next=sequence;
         while(!remaining.isEmpty()){
