@@ -12,19 +12,35 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PipelineDispatchPublisher {
- private final PipelineDispatchRepository dispatches;
- private final RabbitTemplate rabbitTemplate;
- private final ObjectMapper objectMapper;
- public PipelineDispatchPublisher(PipelineDispatchRepository dispatches,RabbitTemplate rabbitTemplate,ObjectMapper objectMapper){this.dispatches=dispatches;this.rabbitTemplate=rabbitTemplate;this.objectMapper=objectMapper;}
- @Scheduled(fixedDelayString="${forgeci.pipeline.publisher-delay-ms:500}")
- public void publishPending(){for(PipelineDispatch d:dispatches.findTop50ByStatusOrderByCreatedAtAsc(PipelineDispatchStatus.PENDING))publish(d);}
- @Transactional
- void publish(PipelineDispatch d){
-  d.recordPublishAttempt();
-  try{
-   rabbitTemplate.convertAndSend(PipelineDispatchRabbitConfig.EXCHANGE,PipelineDispatchRabbitConfig.ROUTING_KEY,new PipelineDispatchMessage(d.getId(),d.getPipelineRunId()));
-   d.markPublished();
-  }catch(RuntimeException e){d.markFailed(e.getMessage());}
-  dispatches.save(d);
- }
+    private final PipelineDispatchRepository dispatches;
+    private final RabbitTemplate rabbitTemplate;
+    private final ObjectMapper objectMapper;
+
+    public PipelineDispatchPublisher(PipelineDispatchRepository dispatches, RabbitTemplate rabbitTemplate, ObjectMapper objectMapper) {
+        this.dispatches = dispatches;
+        this.rabbitTemplate = rabbitTemplate;
+        this.objectMapper = objectMapper;
+    }
+
+    @Scheduled(fixedDelayString = "${forgeci.pipeline.publisher-delay-ms:500}")
+    public void publishPending() {
+        for (PipelineDispatch d : dispatches.findTop50ByStatusOrderByCreatedAtAsc(PipelineDispatchStatus.PENDING)) {
+            publish(d);
+        }
+    }
+
+    @Transactional
+    void publish(PipelineDispatch d) {
+        d.recordPublishAttempt();
+        try {
+            rabbitTemplate.convertAndSend(
+                    PipelineDispatchRabbitConfig.EXCHANGE,
+                    PipelineDispatchRabbitConfig.ROUTING_KEY,
+                    new PipelineDispatchMessage(UUID.randomUUID(), d.getId(), d.getPipelineRunId()));
+            d.markPublished();
+        } catch (RuntimeException e) {
+            d.markFailed(e.getMessage());
+        }
+        dispatches.save(d);
+    }
 }
