@@ -71,7 +71,7 @@ public class JobPublisher {
 
         JobMessage message = JobMessage.create(
                 job.getId(),
-                UUID.randomUUID(),
+                job.getAttemptId(),
                 run.getRepositoryId(),
                 run.getId(),
                 organizationId,
