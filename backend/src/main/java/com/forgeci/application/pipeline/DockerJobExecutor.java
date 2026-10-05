@@ -24,7 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
-/** Phase 10: checkout exact commit, hardened container, stop-on-fail per step. */
+/** Phase 10/17: checkout exact commit, hardened container, stop-on-fail, cancelable process. */
 @Service
 @Primary
 public class DockerJobExecutor implements JobExecutor {
@@ -33,23 +33,27 @@ public class DockerJobExecutor implements JobExecutor {
     private final LogChunkService logs;
     private final ArtifactCollector artifactCollector;
     private final ArtifactService artifactService;
+    private final JobCancellationRegistry cancellations;
 
     public DockerJobExecutor(
             @Value("${forgeci.worker.docker-binary:docker}") String dockerBinary,
             WorkspaceManager workspaces,
             LogChunkService logs,
             ArtifactCollector artifactCollector,
-            ArtifactService artifactService) {
+            ArtifactService artifactService,
+            JobCancellationRegistry cancellations) {
         this.dockerBinary = dockerBinary;
         this.workspaces = workspaces;
         this.logs = logs;
         this.artifactCollector = artifactCollector;
         this.artifactService = artifactService;
+        this.cancellations = cancellations;
     }
 
     @Override
     public ExecutionResult execute(JobExecutionRequest request) {
         Path workspace = workspaces.checkout(request.cloneUrl(), request.commitSha(), request.githubToken());
+        cancellations.register(request.jobId());
         try {
             List<String> args = new ArrayList<>();
             args.add(dockerBinary);
@@ -91,6 +95,7 @@ public class DockerJobExecutor implements JobExecutor {
             args.add(request.command());
 
             Process process = new ProcessBuilder(args).redirectErrorStream(false).start();
+            cancellations.registerProcess(request.jobId(), process);
             ExecutorService io = Executors.newFixedThreadPool(2);
             AtomicLong sequence = new AtomicLong(logs.nextSequence(request.jobId()));
             Future<?> out = io.submit(() -> capture(process.getInputStream(), request.jobId(), "stdout", sequence));
@@ -118,11 +123,11 @@ public class DockerJobExecutor implements JobExecutor {
         } catch (ExecutionException | TimeoutException e) {
             throw new IllegalStateException("Unable to capture container output", e);
         } finally {
+            cancellations.unregister(request.jobId());
             workspaces.cleanup(workspace);
         }
     }
 
-    /** Phase 12: after the step, match configured artifact paths, zip them and upload. */
     private void collectArtifacts(JobExecutionRequest request, Path workspace) {
         if (request.artifactPaths().isEmpty()) {
             return;
