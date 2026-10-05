@@ -10,6 +10,8 @@ import com.forgeci.infrastructure.webhook.WebhookDeliveryRepository;
 import com.forgeci.infrastructure.pipeline.PipelineRunRepository;
 import com.forgeci.infrastructure.pipeline.JobRunRepository;
 import com.forgeci.infrastructure.pipeline.StepRunRepository;
+import com.forgeci.infrastructure.pipeline.PipelineDispatchRepository;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -33,6 +35,8 @@ class ForgeCiApplicationTests {
     @MockBean PipelineRunRepository pipelineRunRepository;
     @MockBean JobRunRepository jobRunRepository;
     @MockBean StepRunRepository stepRunRepository;
+    @MockBean PipelineDispatchRepository pipelineDispatchRepository;
+    @MockBean RabbitTemplate rabbitTemplate;
 
     @Test void contextLoads() {}
 }
