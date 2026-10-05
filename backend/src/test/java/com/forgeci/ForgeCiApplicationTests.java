@@ -11,6 +11,7 @@ import com.forgeci.infrastructure.pipeline.PipelineRunRepository;
 import com.forgeci.infrastructure.pipeline.JobRunRepository;
 import com.forgeci.infrastructure.pipeline.StepRunRepository;
 import com.forgeci.infrastructure.pipeline.PipelineDispatchRepository;
+import com.forgeci.infrastructure.pipeline.ProcessedMessageRepository;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -36,6 +37,7 @@ class ForgeCiApplicationTests {
     @MockBean JobRunRepository jobRunRepository;
     @MockBean StepRunRepository stepRunRepository;
     @MockBean PipelineDispatchRepository pipelineDispatchRepository;
+    @MockBean ProcessedMessageRepository processedMessageRepository;
     @MockBean RabbitTemplate rabbitTemplate;
 
     @Test void contextLoads() {}
