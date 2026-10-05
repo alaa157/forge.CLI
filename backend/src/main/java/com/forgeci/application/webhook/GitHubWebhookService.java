@@ -26,7 +26,7 @@ import org.slf4j.Logger; import org.slf4j.LoggerFactory; import org.springframew
    PipelineConfiguration configuration=configurationService.load(yaml.get());
    PipelineRun run=pipelineRuns.create(repo.get().getId(),event.commitSha(),event.branch(),eventType,yaml.get(),configuration);
    delivery.markProcessed(Instant.now()); return Result.created(run.getId());
-  }catch(Exception e){delivery.markFailed(Instant.now());log.error("GitHub webhook processing failed provider={} deliveryId={} eventType={}",PROVIDER,deliveryId,eventType,e);throw e;}
+  }catch(Exception e){delivery.markFailed(Instant.now());log.error("GitHub webhook processing failed provider={} deliveryId={} eventType={}",PROVIDER,deliveryId,eventType,e);throw e instanceof RuntimeException ? (RuntimeException)e : new IllegalStateException("GitHub webhook processing failed",e);}
  }
  private EventData extract(String type,JsonNode root){
   if(type.equals("push")){String sha=text(root.at("/after"));String ref=text(root.at("/ref"));if(sha==null||ref==null||!ref.startsWith("refs/heads/")||isZero(sha))return null;return new EventData(sha,ref.substring("refs/heads/".length()));}
