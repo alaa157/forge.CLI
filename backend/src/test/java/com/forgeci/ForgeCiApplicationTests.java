@@ -6,6 +6,7 @@ import com.forgeci.infrastructure.organization.OrganizationMemberRepository;
 import com.forgeci.infrastructure.repository.RepositoryConnectionRepository;
 import com.forgeci.infrastructure.organization.GitHubConnectionRepository;
 import com.forgeci.infrastructure.user.UserRepository;
+import com.forgeci.infrastructure.webhook.WebhookDeliveryRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -25,6 +26,7 @@ class ForgeCiApplicationTests {
     @MockBean OrganizationMemberRepository organizationMemberRepository;
     @MockBean RepositoryConnectionRepository repositoryConnectionRepository;
     @MockBean GitHubConnectionRepository gitHubConnectionRepository;
+    @MockBean WebhookDeliveryRepository webhookDeliveryRepository;
 
     @Test void contextLoads() {}
 }
