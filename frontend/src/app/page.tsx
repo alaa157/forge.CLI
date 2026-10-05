@@ -1,0 +1,1 @@
+export default function HomePage(){return <main className="min-h-screen p-8"><h1 className="text-4xl font-bold">ForgeCI</h1><p className="mt-4 text-zinc-400">CI/CD and test intelligence foundation.</p></main>}
