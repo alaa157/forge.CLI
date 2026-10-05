@@ -42,6 +42,13 @@ public class TestResultController {
         return service.ingest(jobRunId, repositoryId, commitSha, branch, file.getInputStream());
     }
 
+    /** Phase 15 — GET /tests */
+    @GetMapping("/tests")
+    public List<TestExecution> listTests(
+            @RequestParam UUID repositoryId, @RequestParam(required = false) String testId) {
+        return service.list(repositoryId, testId);
+    }
+
     @GetMapping("/tests/{id}/history")
     public List<TestExecution> history(@PathVariable String id) {
         return service.history(id);
