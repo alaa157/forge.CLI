@@ -1,0 +1,30 @@
+version: 1
+
+pipeline:
+  name: forgeci-example
+  triggers:
+    - push
+    - pull_request
+  defaults:
+    timeout: 600
+    retries: 0
+  jobs:
+    install:
+      image: node:22-bookworm
+      commands:
+        - npm ci
+    test:
+      image: node:22-bookworm
+      depends_on:
+        - install
+      commands:
+        - npm test -- --runInBand
+    build:
+      image: node:22-bookworm
+      depends_on:
+        - test
+      commands:
+        - npm run build
+      artifacts:
+        paths:
+          - dist/**
