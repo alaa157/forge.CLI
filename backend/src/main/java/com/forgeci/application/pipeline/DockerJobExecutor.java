@@ -1,7 +1,7 @@
 package com.forgeci.application.pipeline;
 
 import com.forgeci.application.artifact.ArtifactCollector;
-import com.forgeci.application.artifact.ArtifactService;
+import com.forgeci.application.artifact.ArtifactService;\nimport com.forgeci.application.cache.CacheService;\nimport com.forgeci.application.security.SecretMasker;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -32,7 +32,7 @@ public class DockerJobExecutor implements JobExecutor {
     private final WorkspaceManager workspaces;
     private final LogChunkService logs;
     private final ArtifactCollector artifactCollector;
-    private final ArtifactService artifactService;
+    private final ArtifactService artifactService;\n    private final CacheService cacheService;
     private final JobCancellationRegistry cancellations;
 
     public DockerJobExecutor(
@@ -46,7 +46,7 @@ public class DockerJobExecutor implements JobExecutor {
         this.workspaces = workspaces;
         this.logs = logs;
         this.artifactCollector = artifactCollector;
-        this.artifactService = artifactService;
+        this.artifactService = artifactService;\n        this.cacheService = cacheService;
         this.cancellations = cancellations;
     }
 
@@ -151,7 +151,7 @@ public class DockerJobExecutor implements JobExecutor {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                logs.append(jobId, stream, sequence.getAndIncrement(), line + System.lineSeparator());
+                logs.append(jobId, stream, sequence.getAndIncrement(), SecretMasker.mask(line, request.environment().values()) + System.lineSeparator());
             }
         } catch (IOException e) {
             logs.append(jobId, stream, sequence.getAndIncrement(), "[log capture failed]" + System.lineSeparator());
