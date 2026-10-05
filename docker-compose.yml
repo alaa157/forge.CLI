@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-forgeci}
+      POSTGRES_USER: ${POSTGRES_USER:-forgeci}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-forgeci_local}
+    ports: ["5432:5432"]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    healthcheck: {test: ["CMD-SHELL","pg_isready"], interval: 5s, timeout: 5s, retries: 10}
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server","--requirepass","${REDIS_PASSWORD:-redis_local}"]
+    ports: ["6379:6379"]
+    volumes: [redis_data:/data]
+    healthcheck: {test: ["CMD","redis-cli","ping"], interval: 5s, timeout: 5s, retries: 10}
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_DEFAULT_USER:-forgeci}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_DEFAULT_PASS:-rabbitmq_local}
+    ports: ["5672:5672","15672:15672"]
+    volumes: [rabbitmq_data:/var/lib/rabbitmq]
+    healthcheck: {test: ["CMD","rabbitmq-diagnostics","-q","ping"], interval: 10s, timeout: 5s, retries: 10}
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin_local}
+    ports: ["9000:9000","9001:9001"]
+    volumes: [minio_data:/data]
+    healthcheck: {test: ["CMD","mc","ready","local"], interval: 10s, timeout: 5s, retries: 10}
+  prometheus:
+    image: prom/prometheus:latest
+    ports: ["9090:9090"]
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      rabbitmq: {condition: service_healthy}
+      minio: {condition: service_healthy}
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-grafana_local}
+    ports: ["3001:3000"]
+    volumes: [grafana_data:/var/lib/grafana]
+    depends_on: {prometheus: {condition: service_started}}
+volumes:
+  postgres_data: {}
+  redis_data: {}
+  rabbitmq_data: {}
+  minio_data: {}
+  prometheus_data: {}
+  grafana_data: {}
