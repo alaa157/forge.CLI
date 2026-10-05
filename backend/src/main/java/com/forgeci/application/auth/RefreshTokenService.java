@@ -2,7 +2,7 @@ package com.forgeci.application.auth;
 import com.forgeci.domain.user.RefreshToken;
 import com.forgeci.domain.user.User;
 import com.forgeci.infrastructure.user.RefreshTokenRepository;
-import java.nio.charset.StandardCharsets; import java.security.MessageDigest; import java.security.SecureRandom; import java.time.Duration; import java.time.Instant; import java.util.Base64; import java.util.UUID;
+import java.nio.charset.StandardCharsets; import java.security.MessageDigest; import java.security.SecureRandom; import java.time.Duration; import java.time.Instant; import java.util.Base64; import java.util.HexFormat; import java.util.UUID;
 import org.springframework.beans.factory.annotation.Value; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional;
 @Service public class RefreshTokenService {
  private final RefreshTokenRepository repository; private final Duration lifetime; private final SecureRandom random=new SecureRandom();
