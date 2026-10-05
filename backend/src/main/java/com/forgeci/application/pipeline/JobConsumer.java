@@ -3,6 +3,7 @@ package com.forgeci.application.pipeline;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forgeci.application.github.GitHubConnectionService;
+import com.forgeci.application.secret.SecretService;
 import com.forgeci.config.ForgeCiRabbitConfig;
 import com.forgeci.domain.pipeline.*;
 import com.forgeci.domain.repository.RepositoryConnection;
@@ -33,6 +34,7 @@ public class JobConsumer {
     private final GitHubConnectionService connections;
     private final JobExecutor executor;
     private final ObjectMapper objectMapper;
+    private final SecretService secrets;
     private final Duration stepTimeout;
     private final int cpuLimit;
     private final long memoryBytes;
@@ -45,6 +47,7 @@ public class JobConsumer {
             PipelineRunRepository runs,
             RepositoryConnectionRepository repositories,
             GitHubConnectionService connections,
+            SecretService secrets,
             JobExecutor executor,
             ObjectMapper objectMapper,
             @Value("${forgeci.worker.step-timeout-seconds:1800}") long timeoutSeconds,
@@ -57,6 +60,7 @@ public class JobConsumer {
         this.runs = runs;
         this.repositories = repositories;
         this.connections = connections;
+        this.secrets = secrets;
         this.executor = executor;
         this.objectMapper = objectMapper;
         this.stepTimeout = Duration.ofSeconds(timeoutSeconds);
@@ -64,6 +68,8 @@ public class JobConsumer {
         this.memoryBytes = memoryBytes;
         this.pidsLimit = pidsLimit;
     }
+
+    private List<String> listOf(String json) { try { List<String> v=objectMapper.readValue(json,new TypeReference<List<String>>(){}); return v==null?List.of():v; } catch(Exception e){ throw new IllegalStateException("Invalid job metadata",e); } }
 
     private List<String> artifactPathsOf(JobRun job) {
         try {
@@ -135,6 +141,8 @@ public class JobConsumer {
             step.start();
             steps.save(step);
 
+            Map<String,String> environment = new java.util.HashMap<>();
+            environment.putAll(secrets.resolve(repo.getOrganization().getId(), repo.getId(), listOf(job.getSecretNames())));
             JobExecutionRequest request = new JobExecutionRequest(
                     job.getId(),
                     run.getRepositoryId(),
@@ -143,12 +151,14 @@ public class JobConsumer {
                     run.getCommitSha(),
                     job.getImage(),
                     step.getCommand(),
-                    Map.of(),
+                    environment,
                     stepTimeout,
                     cpuLimit,
                     memoryBytes,
                     pidsLimit,
-                    artifactPathsOf(job));
+                    artifactPathsOf(job),
+                    job.getCacheKey(),
+                    listOf(job.getCachePaths()));
 
             ExecutionResult result = executor.execute(request);
             if (result.timedOut()) {
