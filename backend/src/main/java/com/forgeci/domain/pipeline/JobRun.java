@@ -29,9 +29,21 @@ public class JobRun {
     @Column(name="depends_on", nullable=false, columnDefinition="text")
     private String dependsOn;
 
+    @Column(nullable=false, length=10)
+    private String priority = "NORMAL";
+
     @Enumerated(EnumType.STRING)
     @Column(nullable=false, length=20)
     private JobRunStatus status;
+
+    @Column(name="lease_id")
+    private UUID leaseId;
+
+    @Column(name="lease_worker_id")
+    private UUID leaseWorkerId;
+
+    @Column(name="lease_expires_at")
+    private Instant leaseExpiresAt;
 
     @Column(name="created_at",nullable=false,updatable=false)
     private Instant createdAt;
@@ -56,6 +68,7 @@ public class JobRun {
         this.image = image;
         this.commands = commands == null ? "[]" : commands;
         this.dependsOn = dependsOn == null ? "[]" : dependsOn;
+        this.priority = "NORMAL";
         this.status = JobRunStatus.PENDING;
     }
 
@@ -63,11 +76,36 @@ public class JobRun {
 
     public void queue() { transition(JobRunStatus.QUEUED); }
     public void start() { transition(JobRunStatus.RUNNING); startedAt = Instant.now(); }
-    public void succeed() { transition(JobRunStatus.SUCCEEDED); finishedAt = Instant.now(); }
-    public void fail() { transition(JobRunStatus.FAILED); finishedAt = Instant.now(); }
-    public void cancel() { transition(JobRunStatus.CANCELLED); finishedAt = Instant.now(); }
-    public void timeOut() { transition(JobRunStatus.TIMED_OUT); finishedAt = Instant.now(); }
-    public void skip() { transition(JobRunStatus.SKIPPED); finishedAt = Instant.now(); }
+    public void succeed() { transition(JobRunStatus.SUCCEEDED); finishedAt = Instant.now(); clearLease(); }
+    public void fail() { transition(JobRunStatus.FAILED); finishedAt = Instant.now(); clearLease(); }
+    public void cancel() { transition(JobRunStatus.CANCELLED); finishedAt = Instant.now(); clearLease(); }
+    public void timeOut() { transition(JobRunStatus.TIMED_OUT); finishedAt = Instant.now(); clearLease(); }
+    public void skip() { transition(JobRunStatus.SKIPPED); finishedAt = Instant.now(); clearLease(); }
+
+    public void acquireLease(UUID leaseId, UUID workerId, Instant expiresAt) {
+        this.leaseId = leaseId;
+        this.leaseWorkerId = workerId;
+        this.leaseExpiresAt = expiresAt;
+    }
+
+    public void renewLease(Instant expiresAt) {
+        this.leaseExpiresAt = expiresAt;
+    }
+
+    public void clearExpiredLeaseAndRequeue() {
+        if (status != JobRunStatus.RUNNING) {
+            throw new IllegalStateException("Only RUNNING jobs can be requeued after lease expiry");
+        }
+        clearLease();
+        this.status = JobRunStatus.QUEUED;
+        this.startedAt = null;
+    }
+
+    private void clearLease() {
+        this.leaseId = null;
+        this.leaseWorkerId = null;
+        this.leaseExpiresAt = null;
+    }
 
     private void transition(JobRunStatus target) {
         if (!allowed(status, target)) throw new IllegalStateException("Invalid job run transition: " + status + " -> " + target);
@@ -84,7 +122,18 @@ public class JobRun {
         };
     }
 
-    public UUID getId(){return id;} public UUID getPipelineRunId(){return pipelineRunId;} public String getName(){return name;}
-    public String getImage(){return image;} public String getCommands(){return commands;} public String getDependsOn(){return dependsOn;}
-    public JobRunStatus getStatus(){return status;} public Instant getCreatedAt(){return createdAt;} public Instant getStartedAt(){return startedAt;} public Instant getFinishedAt(){return finishedAt;}
+    public UUID getId(){return id;}
+    public UUID getPipelineRunId(){return pipelineRunId;}
+    public String getName(){return name;}
+    public String getImage(){return image;}
+    public String getCommands(){return commands;}
+    public String getDependsOn(){return dependsOn;}
+    public String getPriority(){return priority;}
+    public JobRunStatus getStatus(){return status;}
+    public UUID getLeaseId(){return leaseId;}
+    public UUID getLeaseWorkerId(){return leaseWorkerId;}
+    public Instant getLeaseExpiresAt(){return leaseExpiresAt;}
+    public Instant getCreatedAt(){return createdAt;}
+    public Instant getStartedAt(){return startedAt;}
+    public Instant getFinishedAt(){return finishedAt;}
 }
