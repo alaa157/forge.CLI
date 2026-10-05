@@ -29,7 +29,7 @@ public class DockerJobExecutor implements JobExecutor {
                     "-w","/workspace","--label","forgeci.job="+request.jobId(),"--label","forgeci.commit="+request.commitSha(),
                     request.image(),"sh","-lc",request.command()));
             Process process=new ProcessBuilder(args).redirectErrorStream(false).start();
-            ExecutorService io=Executors.newFixedThreadPool(2); AtomicLong sequence=new AtomicLong();
+            ExecutorService io=Executors.newFixedThreadPool(2); AtomicLong sequence=new AtomicLong(logs.nextSequence(request.jobId()));
             Future<?> out=io.submit(()->capture(process.getInputStream(),request.jobId(),"stdout",sequence));
             Future<?> err=io.submit(()->capture(process.getErrorStream(),request.jobId(),"stderr",sequence));
             try {
