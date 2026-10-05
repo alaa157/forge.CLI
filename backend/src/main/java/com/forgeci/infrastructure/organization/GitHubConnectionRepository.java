@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface GitHubConnectionRepository extends JpaRepository<GitHubConnection,UUID> {
  List<GitHubConnection> findAllByOrganizationId(UUID organizationId);
  Optional<GitHubConnection> findByIdAndOrganizationId(UUID id,UUID organizationId);
- Optional<GitHubConnection> findByOrganizationIdAndExternalAccountId(UUID organizationId,String externalAccountId);
+ Optional<GitHubConnection> findByOrganizationIdAndExternalAccountId(UUID organizationId,String externalAccountId); Optional<GitHubConnection> findFirstByOrganizationIdAndStatus(com.forgeci.domain.organization.GitHubConnectionStatus status,UUID organizationId);
 }
