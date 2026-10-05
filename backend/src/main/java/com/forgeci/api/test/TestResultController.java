@@ -10,6 +10,7 @@ public class TestResultController{
   if(file.getSize()>20L*1024*1024)throw new IllegalArgumentException("JUnit XML file is too large");
   return service.ingest(jobRunId,repositoryId,commitSha,branch,file.getInputStream());
  }
+ @GetMapping("/tests/{id}/history") public List<TestExecution> history(@PathVariable String id){return service.history(id);}
  @GetMapping("/repositories/{repositoryId}/tests") public List<TestExecution> list(@PathVariable UUID repositoryId,@RequestParam(required=false)String testId){return service.list(repositoryId,testId);}
  @GetMapping("/repositories/{repositoryId}/tests/analytics") public Map<String,Object> analytics(@PathVariable UUID repositoryId,@RequestParam String testId){return service.analytics(repositoryId,testId);}
 }
