@@ -5,12 +5,12 @@ import java.util.Map;
 import java.util.UUID;
 
 public record JobExecutionRequest(
-        UUID jobId, UUID repositoryId, String cloneUrl, String commitSha,
+        UUID jobId, UUID repositoryId, String cloneUrl, String githubToken, String commitSha,
         String image, String command, Map<String, String> environment,
         Duration timeout, int cpuLimit, long memoryBytes, long pidsLimit) {
     public JobExecutionRequest {
         if (jobId == null || repositoryId == null) throw new IllegalArgumentException("job and repository IDs are required");
-        if (cloneUrl == null || cloneUrl.isBlank()) throw new IllegalArgumentException("cloneUrl is required");
+        if (cloneUrl == null || cloneUrl.isBlank() || githubToken == null || githubToken.isBlank()) throw new IllegalArgumentException("repository credentials are required");
         if (commitSha == null || !commitSha.matches("[0-9a-fA-F]{7,64}")) throw new IllegalArgumentException("commitSha is invalid");
         if (image == null || !image.matches("[A-Za-z0-9./:_@-]+")) throw new IllegalArgumentException("Unsafe container image");
         if (command == null || command.isBlank()) throw new IllegalArgumentException("command is required");
