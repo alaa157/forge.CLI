@@ -4,7 +4,7 @@ import org.junit.jupiter.api.Test;
 class GitHubWebhookSignatureVerifierTest {
  @Test void verifiesGitHubDocumentedSignature(){
   var verifier=new GitHubWebhookSignatureVerifier("It's a Secret to Everybody");
-  assertTrue(verifier.verify("Hello, World!".getBytes(java.nio.charset.StandardCharsets.UTF_8),"sha256=757107ea0eb2509fc46f4379c8b043e17"));
+  assertTrue(verifier.verify("Hello, World!".getBytes(java.nio.charset.StandardCharsets.UTF_8),"sha256=757107ea0eb2509fc6c22c46f4379c8b043e17"));
  }
  @Test void rejectsTamperedPayload(){
   var verifier=new GitHubWebhookSignatureVerifier("It's a Secret to Everybody");
