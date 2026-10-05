@@ -80,6 +80,24 @@ public class PipelineRun {
     public void cancel() { transition(PipelineRunStatus.CANCELLED); finishedAt = Instant.now(); }
     public void timeOut() { transition(PipelineRunStatus.TIMED_OUT); finishedAt = Instant.now(); }
 
+    public void transitionTo(PipelineRunStatus target) {
+        transition(target);
+        if (target == PipelineRunStatus.RUNNING && startedAt == null) {
+            startedAt = Instant.now();
+        }
+        if (target == PipelineRunStatus.SUCCEEDED || target == PipelineRunStatus.FAILED
+                || target == PipelineRunStatus.CANCELLED || target == PipelineRunStatus.TIMED_OUT) {
+            finishedAt = Instant.now();
+        }
+    }
+
+    public static boolean isTerminal(PipelineRunStatus status) {
+        return status == PipelineRunStatus.SUCCEEDED
+                || status == PipelineRunStatus.FAILED
+                || status == PipelineRunStatus.CANCELLED
+                || status == PipelineRunStatus.TIMED_OUT;
+    }
+
     private void transition(PipelineRunStatus target) {
         if (!isAllowed(status, target)) {
             throw new IllegalStateException("Invalid pipeline run transition: " + status + " -> " + target);
