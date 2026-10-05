@@ -18,8 +18,8 @@ public class PipelineScheduler {
  public void scheduleCreatedRuns(){
   List<PipelineRun> candidates=pipelineRuns.findAllByStatusOrderByCreatedAtAsc(PipelineRunStatus.CREATED);
   for(PipelineRun run:candidates.stream().limit(50).toList()){
-   UUID dispatchId=dispatches.claimDispatch(UUID.randomUUID(),run.getId());
-   if(dispatchId==null)continue;
+   int claimed=dispatches.claimDispatch(UUID.randomUUID(),run.getId());
+   if(claimed!=1)continue;
    run.queue();
    pipelineRuns.save(run);
   }
