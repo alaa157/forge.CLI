@@ -29,6 +29,7 @@ CREATE TABLE forgeci.repositories (
  clone_url TEXT NOT NULL,
  default_branch VARCHAR(255),
  private_repo BOOLEAN NOT NULL,
+ private BOOLEAN NOT NULL DEFAULT FALSE,
  created_at TIMESTAMPTZ NOT NULL,
  updated_at TIMESTAMPTZ NOT NULL,
  CONSTRAINT ck_repository_provider CHECK (provider IN ('GITHUB'))
