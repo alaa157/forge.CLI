@@ -6,7 +6,7 @@ import com.forgeci.domain.pipeline.JobRun;
 import com.forgeci.domain.pipeline.PipelineDefinition.Job;
 import com.forgeci.domain.pipeline.PipelineRun;
 import com.forgeci.domain.pipeline.PipelineRunStatus;
-import com.forgeci.domain.pipeline.PipelineConfiguration;
+import com.forgeci.application.pipeline.PipelineConfiguration;
 import com.forgeci.domain.pipeline.StepRun;
 import com.forgeci.infrastructure.pipeline.JobRunRepository;
 import com.forgeci.infrastructure.pipeline.PipelineRunRepository;
