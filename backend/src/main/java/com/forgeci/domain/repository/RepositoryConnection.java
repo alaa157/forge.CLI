@@ -13,7 +13,7 @@ public class RepositoryConnection {
  @Column(name="full_name",nullable=false,length=400) private String fullName;
  @Column(name="clone_url",nullable=false,columnDefinition="text") private String cloneUrl;
  @Column(name="default_branch") private String defaultBranch;
- @Column(nullable=false) private boolean privateRepo;
+ @Column(name="private",nullable=false) private boolean privateRepo;
  @Column(nullable=false,updatable=false) private Instant createdAt;
  @Column(nullable=false) private Instant updatedAt;
  protected RepositoryConnection(){}
