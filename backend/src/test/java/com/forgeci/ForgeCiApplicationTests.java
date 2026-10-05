@@ -4,7 +4,7 @@ import com.forgeci.infrastructure.user.RefreshTokenRepository;
 import com.forgeci.infrastructure.organization.OrganizationRepository;
 import com.forgeci.infrastructure.organization.OrganizationMemberRepository;
 import com.forgeci.infrastructure.repository.RepositoryRepository;
-import com.forgeci.infrastructure.repository.GitHubConnectionRepository;
+import com.forgeci.infrastructure.organization.GitHubConnectionRepository;
 import com.forgeci.infrastructure.user.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
