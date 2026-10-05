@@ -52,6 +52,9 @@ public class PipelineRun {
     @Column(name="finished_at")
     private Instant finishedAt;
 
+    @Column(name="cancellation_requested", nullable=false)
+    private boolean cancellationRequested;
+
     @Version
     private long version;
 
@@ -79,6 +82,8 @@ public class PipelineRun {
     public void fail() { transition(PipelineRunStatus.FAILED); finishedAt = Instant.now(); }
     public void cancel() { transition(PipelineRunStatus.CANCELLED); finishedAt = Instant.now(); }
     public void timeOut() { transition(PipelineRunStatus.TIMED_OUT); finishedAt = Instant.now(); }
+    public void requestCancellation() { cancellationRequested = true; }
+    public boolean isCancellationRequested() { return cancellationRequested; }
 
     public void transitionTo(PipelineRunStatus target) {
         transition(target);
