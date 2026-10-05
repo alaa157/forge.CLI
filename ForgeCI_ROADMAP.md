@@ -1718,10 +1718,10 @@ Do not blindly copy implementation. Define a stable service contract and migrate
 
 Use:
 
-- [ ] failure frequency
-- [ ] outcome inconsistency
-- [ ] recency weighting
-- [ ] duration instability
+- [x] failure frequency
+- [x] outcome inconsistency
+- [x] recency weighting
+- [x] duration instability
 
 Output:
 
