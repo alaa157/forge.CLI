@@ -122,7 +122,28 @@ public class PipelineRunService {
     public PipelineRun fail(UUID id) { return mutate(id, PipelineRun::fail); }
 
     @Transactional
-    public PipelineRun cancel(UUID id) { return mutate(id, PipelineRun::cancel); }
+    public PipelineRun cancel(UUID id) {
+        PipelineRun run = pipelineRuns.findById(id).orElseThrow(() -> new IllegalArgumentException("Pipeline run not found"));
+        if (PipelineRun.isTerminal(run.getStatus())) return run;
+        if (run.getStatus() == PipelineRunStatus.QUEUED) {
+            run.cancel();
+            for (JobRun job : jobRuns.findAllByPipelineRunIdOrderByNameAsc(id)) {
+                if (job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.PENDING || job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.QUEUED) {
+                    job.cancel(); jobRuns.save(job);
+                }
+            }
+        } else {
+            run.requestCancellation();
+            for (JobRun job : jobRuns.findAllByPipelineRunIdOrderByNameAsc(id)) {
+                if (job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.PENDING || job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.QUEUED) {
+                    job.cancel(); jobRuns.save(job);
+                } else if (job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.RUNNING) {
+                    job.requestCancellation(); jobRuns.save(job); cancellations.cancel(job.getId());
+                }
+            }
+        }
+        return pipelineRuns.save(run);
+    }
 
     @Transactional
     public PipelineRun timeOut(UUID id) { return mutate(id, PipelineRun::timeOut); }
