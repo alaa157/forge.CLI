@@ -11,6 +11,9 @@ import com.forgeci.domain.pipeline.StepRun;
 import com.forgeci.infrastructure.pipeline.JobRunRepository;
 import com.forgeci.infrastructure.pipeline.PipelineRunRepository;
 import com.forgeci.infrastructure.pipeline.StepRunRepository;
+import com.forgeci.infrastructure.pipeline.PipelineDispatchRepository;
+import com.forgeci.domain.pipeline.PipelineDefinition;
+import com.forgeci.domain.pipeline.PipelineDag;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -25,13 +28,15 @@ public class PipelineRunService {
     private final JobRunRepository jobRuns;
     private final StepRunRepository stepRuns;
     private final ObjectMapper objectMapper;
+    private final PipelineDispatchRepository dispatches;
 
     public PipelineRunService(PipelineRunRepository pipelineRuns, JobRunRepository jobRuns,
-                              StepRunRepository stepRuns, ObjectMapper objectMapper) {
+                              StepRunRepository stepRuns, ObjectMapper objectMapper, PipelineDispatchRepository dispatches) {
         this.pipelineRuns = pipelineRuns;
         this.jobRuns = jobRuns;
         this.stepRuns = stepRuns;
         this.objectMapper = objectMapper;
+        this.dispatches = dispatches;
     }
 
     @Transactional
@@ -74,6 +79,32 @@ public class PipelineRunService {
     @Transactional(readOnly = true)
     public List<PipelineRun> list(UUID repositoryId) {
         return pipelineRuns.findAllByRepositoryIdOrderByCreatedAtDesc(repositoryId);
+    }
+
+
+    @Transactional
+    public PipelineRun retry(UUID id) {
+        PipelineRun source = pipelineRuns.findById(id).orElseThrow(() -> new IllegalArgumentException("Pipeline run not found"));
+        if (!PipelineRun.isTerminal(source.getStatus())) throw new IllegalStateException("Only terminal runs can be retried");
+        try {
+            PipelineDefinition definition = objectMapper.readValue(source.getResolvedPipeline(), PipelineDefinition.class);
+            PipelineDag dag = objectMapper.readValue(source.getJobGraph(), PipelineDag.class);
+            PipelineRun run = new PipelineRun(source.getRepositoryId(), source.getCommitSha(), source.getBranch(), "retry",
+                    source.getPipelineYaml(), source.getResolvedPipeline(), source.getJobGraph(), source.getForgeciVersion());
+            run = pipelineRuns.save(run);
+            List<JobRun> jobs = new ArrayList<>();
+            for (String name : dag.topologicalOrder()) {
+                Job job = definition.pipeline().jobs().get(name);
+                JobRun jobRun = jobRuns.save(new JobRun(run.getId(), name, job.image(), serialize(job.commands()), serialize(job.dependsOn() == null ? List.of() : job.dependsOn())));
+                jobs.add(jobRun);
+            }
+            for (JobRun jobRun : jobs) {
+                for (int i=0;i<readStringList(jobRun.getCommands()).size();i++) stepRuns.save(new StepRun(jobRun.getId(), i, readStringList(jobRun.getCommands()).get(i)));
+            }
+            UUID dispatchId=UUID.randomUUID();
+            dispatches.claimDispatch(dispatchId,run.getId());
+            return run;
+        } catch (JsonProcessingException e) { throw new IllegalStateException("Stored pipeline snapshot is invalid",e); }
     }
 
     @Transactional
