@@ -106,3 +106,10 @@ Phase 11 provides durable chunked logs plus a live WebSocket/STOMP stream. Objec
 - Durable test execution records with repository, commit, branch, job, status, duration, and failure context.
 - Test result ingestion endpoint.
 - Pass/failure rate, average duration, p95 duration, recent failure rate, consecutive failures, and execution count analytics.
+
+## Phase 14–15 status
+
+- Flaky-test scoring and classification implemented over durable Phase 13 history.
+- Historical and dashboard endpoints implemented.
+- Run cancellation/retry and job/test resource endpoints implemented.
+- Retry uses immutable pipeline snapshots and the existing durable dispatch boundary.
