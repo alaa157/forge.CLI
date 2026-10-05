@@ -1,0 +1,10 @@
+ALTER TABLE forgeci.job_runs ADD COLUMN IF NOT EXISTS attempt_number INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE forgeci.job_runs ADD COLUMN IF NOT EXISTS attempt_id UUID;
+ALTER TABLE forgeci.job_runs ADD COLUMN IF NOT EXISTS last_failure_type VARCHAR(40);
+ALTER TABLE forgeci.job_runs ADD COLUMN IF NOT EXISTS cancellation_requested BOOLEAN NOT NULL DEFAULT FALSE;
+UPDATE forgeci.job_runs SET attempt_id = gen_random_uuid() WHERE attempt_id IS NULL;
+ALTER TABLE forgeci.job_runs ALTER COLUMN attempt_id SET NOT NULL;
+ALTER TABLE forgeci.job_runs ADD CONSTRAINT ck_job_attempt_number CHECK (attempt_number >= 1);
+ALTER TABLE forgeci.job_runs ADD CONSTRAINT ck_job_failure_type CHECK (last_failure_type IS NULL OR last_failure_type IN ('INFRASTRUCTURE_FAILURE','TEST_FAILURE','CONFIGURATION_FAILURE','TIMEOUT','WORKER_FAILURE'));
+CREATE UNIQUE INDEX IF NOT EXISTS uk_job_runs_attempt_id ON forgeci.job_runs(attempt_id);
+ALTER TABLE forgeci.pipeline_runs ADD COLUMN IF NOT EXISTS cancellation_requested BOOLEAN NOT NULL DEFAULT FALSE;
