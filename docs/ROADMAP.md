@@ -15,6 +15,8 @@ The repository follows the phased implementation plan in ForgeCI_ROADMAP.md.
 - Phase 9 — RabbitMQ Messaging
 - **Phase 10 — Docker Execution**
 - **Phase 11 — Logs**
+- **Phase 12 — Artifacts**
+- **Phase 13 — Test Result Intelligence**
 
 ## Phase 10 status
 
@@ -87,3 +89,20 @@ Phase 10 replaces the earlier direct Docker boundary with an executor abstractio
 - [x] storage backpressure
 
 Phase 11 provides durable chunked logs plus a live WebSocket/STOMP stream. Object-storage archival and richer log metadata remain future scaling work.
+
+
+## Phase 12 status
+
+- Artifact metadata persisted in PostgreSQL.
+- Storage abstraction with local filesystem and S3-compatible MinIO backends.
+- ZIP-based artifact collection with path-traversal and size/file-count limits.
+- Artifact listing and download endpoint with short-lived S3 signed URLs.
+- Configuration is controlled by `FORGECI_ARTIFACT_*` environment variables.
+
+## Phase 13 status
+
+- Secure JUnit XML parser with external entity/DTD protections.
+- Canonical JUnit test identity: `forgeci::junit::<classname>::<testName>`.
+- Durable test execution records with repository, commit, branch, job, status, duration, and failure context.
+- Test result ingestion endpoint.
+- Pass/failure rate, average duration, p95 duration, recent failure rate, consecutive failures, and execution count analytics.
