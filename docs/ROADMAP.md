@@ -12,34 +12,78 @@ The repository follows the phased implementation plan in ForgeCI_ROADMAP.md.
 - Phase 6 — GitHub Webhooks
 - Phase 7 — Scheduling and Durable Dispatch
 - Phase 8 — Worker Execution
-- **Phase 9 — RabbitMQ Messaging**
+- Phase 9 — RabbitMQ Messaging
+- **Phase 10 — Docker Execution**
+- **Phase 11 — Logs**
 
-## Phase 9 status
+## Phase 10 status
 
-### Task 9.1 — Queue Topology
-- [x] durable jobs queue
-- [x] durable events queue
-- [x] durable logs queue
-- [x] durable notifications queue
-- [x] jobs/events/logs dead-letter queues
-- [x] explicit routing keys
+### Task 10.1 — Executor Abstraction
+- [x] JobExecutor interface
+- [x] execution request/result contracts
+- [x] DockerJobExecutor implementation
 
-### Task 9.2 — Job Message Contract
-- [x] stable message ID
-- [x] job ID
-- [x] attempt ID
-- [x] repository ID
-- [x] pipeline run ID
-- [x] organization ID
-- [x] trace ID
-- [x] creation timestamp
-- [x] no long-lived secrets in message payloads
+### Task 10.2 — Repository Checkout
+- [x] exact commit SHA checkout
+- [x] disposable per-job workspace
+- [x] GitHub-only clone URL validation
+- [x] repository credential injection without putting tokens in command arguments
 
-### Task 9.3 — Idempotent Consumers
-- [x] durable processed-message record
-- [x] `(message_id, consumer)` uniqueness boundary
-- [x] atomic PostgreSQL claim
-- [x] Phase 8 pipeline consumer protected against duplicate delivery
-- [x] stable dispatch identity across publish retries
+### Task 10.3 — Container Execution
+- [x] image
+- [x] command
+- [x] workspace
+- [x] timeout
+- [x] CPU limit
+- [x] memory limit
+- [x] PID limit
+- [x] network policy
 
-Phase 9 adds the messaging boundary without replacing the existing Phase 7 pipeline-dispatch path. The new jobs/events/logs/notifications topology is available for subsequent execution, logging, and notification phases.
+### Task 10.4 — Container Security
+- [x] no privileged mode
+- [x] no Docker socket
+- [x] no host filesystem mounts
+- [x] dropped Linux capabilities
+- [x] no-new-privileges
+- [x] read-only root filesystem
+- [x] isolated temporary filesystem
+- [x] PID/CPU/memory limits
+- [x] execution timeout
+
+### Task 10.5 — Command Execution
+- [x] sequential commands
+- [x] stop after first failed step
+
+Phase 10 replaces the earlier direct Docker boundary with an executor abstraction and exact-commit workspace execution. Docker isolation remains an MVP boundary, not a hardened hostile-workload sandbox.
+
+## Phase 11 status
+
+### Task 11.1 — Worker Log Capture
+- [x] stdout capture
+- [x] stderr capture
+- [x] sequence numbers
+- [x] timestamps
+
+### Task 11.2 — Log Storage
+- [x] PostgreSQL chunk storage
+- [x] 16 KiB chunk limit
+- [x] 10 MiB per-job log limit
+- [x] truncation by storage ceiling
+
+### Task 11.3 — Live Logs
+- [x] STOMP WebSocket endpoint
+- [x] per-job log topic
+- [x] live chunk publication
+
+### Task 11.4 — Log API
+- [x] GET /api/v1/jobs/{id}/logs
+- [x] tail parameter
+- [x] sequence cursor via after parameter
+
+### Task 11.5 — Log Limits
+- [x] maximum chunk size
+- [x] maximum log size
+- [x] bounded API tail
+- [x] storage backpressure
+
+Phase 11 provides durable chunked logs plus a live WebSocket/STOMP stream. Object-storage archival and richer log metadata remain future scaling work.
