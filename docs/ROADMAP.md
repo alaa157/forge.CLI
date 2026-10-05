@@ -10,7 +10,8 @@ The repository follows the phased implementation plan in `ForgeCI_ROADMAP.md`.
 - Phase 4 — Pipeline Configuration
 - Phase 5 — Pipeline Domain Model
 - Phase 6 — GitHub Webhooks
-- **Phase 7 — Scheduling and Durable Dispatch**
+- Phase 7 — Scheduling and Durable Dispatch
+- **Phase 8 — Worker Execution**
 
 ## Phase 7 status
 
@@ -37,4 +38,4 @@ The repository follows the phased implementation plan in `ForgeCI_ROADMAP.md`.
 - [x] at-least-once publication contract
 - [x] explicit downstream idempotency boundary
 
-Phase 7 establishes the durable handoff from persisted pipeline state to the execution queue. Worker execution, containers, logs, retries across attempts, and cancellation orchestration remain later phases.
+Phase 8 establishes the first executable worker path: RabbitMQ dispatch, job/step lifecycle execution, and isolated Docker containers. Repository checkout/workspaces, artifacts, live logs, execution retries, and cancellation signaling remain later phases.
