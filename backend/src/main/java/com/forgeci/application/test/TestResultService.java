@@ -10,6 +10,7 @@ public class TestResultService{
   for(JUnitTestCase t:parser.parse(xml)){String id=TestIdentity.canonical("junit",t.className(),t.name());rows.add(repository.save(new TestExecution(id,jobRunId,repositoryId,t.suite(),t.className(),t.name(),"junit",t.status(),t.durationMs(),t.failureMessage(),t.stdout(),t.stderr(),commitSha,branch,now)));}
   return rows;
  }
+ @Transactional(readOnly=true) public List<TestExecution> history(String testId){return repository.findTop1000ByTestIdOrderByExecutedAtDesc(testId);}
  @Transactional(readOnly=true) public List<TestExecution> list(UUID repositoryId,String testId){return testId==null?repository.findTop1000ByRepositoryIdOrderByExecutedAtDesc(repositoryId):repository.findTop1000ByRepositoryIdAndTestIdOrderByExecutedAtDesc(repositoryId,testId);}
  @Transactional(readOnly=true) public Map<String,Object> analytics(UUID repositoryId,String testId){
   List<TestExecution> rows=repository.findTop1000ByRepositoryIdAndTestIdOrderByExecutedAtDesc(repositoryId,testId);if(rows.isEmpty())return Map.of("testId",testId,"executionCount",0);
