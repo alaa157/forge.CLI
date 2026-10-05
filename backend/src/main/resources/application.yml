@@ -33,3 +33,7 @@ forgeci:
     client-secret: ${GITHUB_CLIENT_SECRET:}
     redirect-uri: ${GITHUB_REDIRECT_URI:http://localhost:8080/api/v1/connections/github/callback}
     state-secret: ${GITHUB_STATE_SECRET:forgeci-local-github-state-secret-change-me-32}
+    webhook-secret: ${GITHUB_WEBHOOK_SECRET:forgeci-local-webhook-secret-change-me-32}
+  pipeline:
+    scheduler-delay-ms: ${FORGECI_PIPELINE_SCHEDULER_DELAY_MS:1000}
+    publisher-delay-ms: ${FORGECI_PIPELINE_PUBLISHER_DELAY_MS:500}

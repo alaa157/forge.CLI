@@ -1,0 +1,21 @@
+package com.forgeci.application.webhook;
+import static org.junit.jupiter.api.Assertions.*; import static org.mockito.ArgumentMatchers.*; import static org.mockito.Mockito.*;
+import com.fasterxml.jackson.databind.ObjectMapper; import com.forgeci.application.github.GitHubClient; import com.forgeci.application.github.GitHubConnectionService; import com.forgeci.application.pipeline.PipelineConfiguration; import com.forgeci.application.pipeline.PipelineConfigurationService; import com.forgeci.application.pipeline.PipelineRunService; import com.forgeci.domain.organization.Organization; import com.forgeci.domain.pipeline.PipelineRun; import com.forgeci.domain.repository.RepositoryConnection; import com.forgeci.domain.repository.RepositoryProvider; import com.forgeci.domain.webhook.WebhookDelivery; import com.forgeci.domain.webhook.WebhookDeliveryStatus; import com.forgeci.infrastructure.repository.RepositoryConnectionRepository; import com.forgeci.infrastructure.webhook.WebhookDeliveryRepository; import java.time.Instant; import java.util.Optional; import java.util.UUID; import org.junit.jupiter.api.Test;
+class GitHubWebhookServiceTest {
+ @Test void createsPipelineRunForPushAtExactCommit() throws Exception{
+  var deliveries=mock(WebhookDeliveryRepository.class); var repositories=mock(RepositoryConnectionRepository.class); var github=mock(GitHubClient.class); var connections=mock(GitHubConnectionService.class); var config=mock(PipelineConfigurationService.class); var runs=mock(PipelineRunService.class); var service=new GitHubWebhookService(deliveries,repositories,github,connections,config,runs,new ObjectMapper());
+  var delivery=new WebhookDelivery("GITHUB","d1","push",Instant.now(),"a".repeat(64)); var repository=mock(RepositoryConnection.class); var org=mock(Organization.class); var run=mock(PipelineRun.class); var runId=UUID.randomUUID();
+  when(deliveries.claim(any(),eq("GITHUB"),eq("d1"),eq("push"),any(),anyString())).thenReturn(1); when(deliveries.findForUpdate("GITHUB","d1")).thenReturn(Optional.of(delivery));
+  when(repositories.findByProviderAndExternalId(RepositoryProvider.GITHUB,"123")).thenReturn(Optional.of(repository)); when(repository.getId()).thenReturn(UUID.randomUUID()); when(repository.getFullName()).thenReturn("acme/app"); when(repository.getOrganization()).thenReturn(org); when(org.getId()).thenReturn(UUID.randomUUID());
+  when(connections.webhookToken(any())).thenReturn("token"); when(github.repositoryFile("token","acme/app",".forgeci.yml","abc123")).thenReturn(Optional.of("version: 1\npipeline:\n  name: test\n  jobs: {}\n"));
+  var configuration=mock(PipelineConfiguration.class); when(config.load(anyString())).thenReturn(configuration); when(runs.create(any(),eq("abc123"),eq("main"),eq("push"),anyString(),same(configuration))).thenReturn(run); when(run.getId()).thenReturn(runId);
+  var result=service.process("d1","push","{\"repository\":{\"id\":123},\"after\":\"abc123\",\"ref\":\"refs/heads/main\"}".getBytes());
+  assertEquals(GitHubWebhookService.Result.Status.CREATED,result.status()); assertEquals(runId,result.pipelineRunId()); assertEquals(WebhookDeliveryStatus.PROCESSED,delivery.getStatus()); verify(runs).create(any(),eq("abc123"),eq("main"),eq("push"),anyString(),same(configuration));
+ }
+ @Test void duplicateProcessedDeliveryDoesNotCreateAnotherRun(){
+  var deliveries=mock(WebhookDeliveryRepository.class); var repositories=mock(RepositoryConnectionRepository.class); var github=mock(GitHubClient.class); var connections=mock(GitHubConnectionService.class); var config=mock(PipelineConfigurationService.class); var runs=mock(PipelineRunService.class); var service=new GitHubWebhookService(deliveries,repositories,github,connections,config,runs,new ObjectMapper());
+  var delivery=mock(WebhookDelivery.class); when(deliveries.claim(any(),eq("GITHUB"),eq("d2"),eq("push"),any(),anyString())).thenReturn(0); when(deliveries.findForUpdate("GITHUB","d2")).thenReturn(Optional.of(delivery)); when(delivery.getStatus()).thenReturn(WebhookDeliveryStatus.PROCESSED);
+  var result=service.process("d2","push","{}".getBytes());
+  assertEquals(GitHubWebhookService.Result.Status.DUPLICATE,result.status()); verifyNoInteractions(runs,config,github,repositories);
+ }
+}
