@@ -1,14 +1,14 @@
 package com.forgeci.application.webhook;
 import com.fasterxml.jackson.databind.JsonNode; import com.fasterxml.jackson.databind.ObjectMapper;
-import com.forgeci.application.github.GitHubClient; import com.forgeci.application.pipeline.PipelineConfiguration; import com.forgeci.application.pipeline.PipelineConfigurationService; import com.forgeci.application.pipeline.PipelineRunService;
+import com.forgeci.application.github.GitHubClient; import com.forgeci.application.github.GitHubConnectionService; import com.forgeci.application.pipeline.PipelineConfiguration; import com.forgeci.application.pipeline.PipelineConfigurationService; import com.forgeci.application.pipeline.PipelineRunService;
 import com.forgeci.domain.pipeline.PipelineRun; import com.forgeci.domain.repository.RepositoryConnection; import com.forgeci.domain.repository.RepositoryProvider; import com.forgeci.domain.webhook.WebhookDelivery; import com.forgeci.domain.webhook.WebhookDeliveryStatus;
 import com.forgeci.infrastructure.repository.RepositoryConnectionRepository; import com.forgeci.infrastructure.webhook.WebhookDeliveryRepository;
 import java.security.MessageDigest; import java.time.Instant; import java.util.HexFormat; import java.util.Optional; import java.util.UUID;
 import org.slf4j.Logger; import org.slf4j.LoggerFactory; import org.springframework.stereotype.Service; import org.springframework.transaction.annotation.Transactional;
 @Service public class GitHubWebhookService {
  private static final Logger log=LoggerFactory.getLogger(GitHubWebhookService.class); private static final String PROVIDER="GITHUB"; private static final String PIPELINE_PATH=".forgeci.yml";
- private final WebhookDeliveryRepository deliveries; private final RepositoryConnectionRepository repositories; private final GitHubClient github; private final PipelineConfigurationService configurationService; private final PipelineRunService pipelineRuns; private final ObjectMapper mapper;
- public GitHubWebhookService(WebhookDeliveryRepository deliveries,RepositoryConnectionRepository repositories,GitHubClient github,PipelineConfigurationService configurationService,PipelineRunService pipelineRuns,ObjectMapper mapper){this.deliveries=deliveries;this.repositories=repositories;this.github=github;this.configurationService=configurationService;this.pipelineRuns=pipelineRuns;this.mapper=mapper;}
+ private final WebhookDeliveryRepository deliveries; private final RepositoryConnectionRepository repositories; private final GitHubClient github; private final GitHubConnectionService connections; private final PipelineConfigurationService configurationService; private final PipelineRunService pipelineRuns; private final ObjectMapper mapper;
+ public GitHubWebhookService(WebhookDeliveryRepository deliveries,RepositoryConnectionRepository repositories,GitHubClient github,GitHubConnectionService connections,PipelineConfigurationService configurationService,PipelineRunService pipelineRuns,ObjectMapper mapper){this.deliveries=deliveries;this.repositories=repositories;this.github=github;this.connections=connections;this.configurationService=configurationService;this.pipelineRuns=pipelineRuns;this.mapper=mapper;}
  @Transactional public Result process(String deliveryId,String eventType,byte[] payload){
   String hash=sha256(payload); UUID claimId=UUID.randomUUID();
   int claimed=deliveries.claim(claimId,PROVIDER,deliveryId,eventType,Instant.now(),hash);
@@ -21,7 +21,7 @@ import org.slf4j.Logger; import org.slf4j.LoggerFactory; import org.springframew
    Optional<RepositoryConnection> repo=repositories.findByProviderAndExternalId(RepositoryProvider.GITHUB,externalId);
    if(repo.isEmpty()){delivery.markProcessed(Instant.now());return Result.ignored();}
    EventData event=extract(eventType,root); if(event==null){delivery.markProcessed(Instant.now());return Result.ignored();}
-   Optional<String> yaml=github.repositoryFile(repo.get().getFullName(),event.commitSha(),PIPELINE_PATH);
+   String token=connections.webhookToken(repo.get().getOrganization().getId()); Optional<String> yaml=github.repositoryFile(token,repo.get().getFullName(),PIPELINE_PATH,event.commitSha());
    if(yaml.isEmpty()){delivery.markProcessed(Instant.now());return Result.noPipeline();}
    PipelineConfiguration configuration=configurationService.load(yaml.get());
    PipelineRun run=pipelineRuns.create(repo.get().getId(),event.commitSha(),event.branch(),eventType,yaml.get(),configuration);
