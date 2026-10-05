@@ -37,12 +37,17 @@ CREATE INDEX idx_repositories_org ON forgeci.repositories(organization_id);
 
 CREATE TABLE forgeci.github_connections (
  id UUID PRIMARY KEY,
- user_id UUID NOT NULL REFERENCES forgeci.users(id),
- github_user_id VARCHAR(120) NOT NULL,
- github_login VARCHAR(120) NOT NULL,
- access_token_ciphertext VARCHAR(2000) NOT NULL,
- connected_at TIMESTAMPTZ NOT NULL,
+ organization_id UUID NOT NULL REFERENCES forgeci.organizations(id),
+ provider VARCHAR(30) NOT NULL DEFAULT 'GITHUB',
+ external_account_id VARCHAR(120) NOT NULL,
+ account_login VARCHAR(120) NOT NULL,
+ encrypted_access_token TEXT NOT NULL,
+ token_expires_at TIMESTAMPTZ,
+ status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE',
+ created_at TIMESTAMPTZ NOT NULL,
  updated_at TIMESTAMPTZ NOT NULL,
- active BOOLEAN NOT NULL DEFAULT TRUE
+ disconnected_at TIMESTAMPTZ,
+ CONSTRAINT ck_github_connection_status CHECK (status IN ('ACTIVE','EXPIRED','REVOKED','DISCONNECTED'))
 );
-CREATE UNIQUE INDEX uk_github_connection_user ON forgeci.github_connections(user_id);
+CREATE INDEX idx_github_connections_org ON forgeci.github_connections(organization_id);
+CREATE UNIQUE INDEX uk_github_connection_org_account ON forgeci.github_connections(organization_id,external_account_id);
