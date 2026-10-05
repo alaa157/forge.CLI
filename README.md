@@ -8,6 +8,8 @@ Self-hosted, production-style CI/CD and test-intelligence platform.
 - **Phase 2 — Authentication:** users, registration/login, refresh-token rotation, and authorization foundations.
 - **Phase 3 — Organizations and repositories:** multi-tenant organizations, repository connections, and GitHub integration foundations.
 - **Phase 4 — Pipeline Configuration:** typed `.forgeci.yml` parsing, safe YAML handling, schema documentation, validation, and deterministic DAG construction.
+- **Phase 5 — Pipeline Domain Model:** durable PipelineRun → JobRun → StepRun execution state machines and immutable execution snapshots.
+- **Phase 6 — GitHub Webhooks:** signed push/pull_request ingestion, delivery idempotency, exact-commit pipeline loading, and automatic PipelineRun creation.
 
 ## Prerequisites
 
@@ -27,4 +29,4 @@ make frontend-check
 
 Pipeline definitions live in `.forgeci.yml`. See `docs/api/pipeline-configuration.md` and `pipeline-schema/schema.json`.
 
-Execution is intentionally deferred to later phases.
+Execution is intentionally deferred to later phases; Phase 6 creates durable PipelineRuns but does not schedule or execute them.
