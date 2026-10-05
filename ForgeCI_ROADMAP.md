@@ -1393,16 +1393,16 @@ Do not expose host filesystem.
 
 Use where supported:
 
-- [ ] non-root user
-- [ ] dropped Linux capabilities
-- [ ] `no-new-privileges`
-- [ ] read-only root filesystem where practical
-- [ ] isolated temporary workspace
-- [ ] PID limits
-- [ ] CPU limits
-- [ ] memory limits
-- [ ] execution timeout
-- [ ] network disabled by default
+- [x] non-root user
+- [x] dropped Linux capabilities
+- [x] `no-new-privileges`
+- [x] read-only root filesystem where practical
+- [x] isolated temporary workspace
+- [x] PID limits
+- [x] CPU limits
+- [x] memory limits
+- [x] execution timeout
+- [x] network disabled by default
 
 Important:
 
@@ -1531,11 +1531,11 @@ Example:
 
 Implement:
 
-- [ ] maximum log chunk size
-- [ ] maximum log size
-- [ ] truncation indicator
-- [ ] backpressure
-- [ ] dropped-chunk metrics
+- [x] maximum log chunk size
+- [x] maximum log size
+- [x] truncation indicator
+- [x] backpressure
+- [x] dropped-chunk metrics
 
 ---
 
