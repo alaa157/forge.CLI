@@ -59,6 +59,15 @@ public class JobPublisher {
         }
     }
 
+    /** Phase 17 — immediately enqueue a requeued attempt (new attempt_id). */
+    public void republish(JobRun job) {
+        if (job.getStatus() != JobRunStatus.QUEUED) {
+            return;
+        }
+        publish(job);
+        processedMessages.claim(UUID.randomUUID(), job.getAttemptId(), PUBLISHER);
+    }
+
     private void publish(JobRun job) {
         PipelineRun run = runs.findById(job.getPipelineRunId()).orElse(null);
         if (run == null) {
