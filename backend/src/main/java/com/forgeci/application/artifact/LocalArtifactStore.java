@@ -1,8 +1,9 @@
 package com.forgeci.application.artifact;
 import com.forgeci.domain.artifact.StoredArtifact;
 import java.io.*;import java.net.URI;import java.nio.file.*;import java.security.*;import java.time.Duration;
-import org.springframework.beans.factory.annotation.Value;import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;import org.springframework.context.annotation.Primary;import org.springframework.stereotype.Service;
 @Service
+@Primary
 public class LocalArtifactStore implements ArtifactStore{
  private final Path root;
  public LocalArtifactStore(@Value("${forgeci.artifacts.local-root:${java.io.tmpdir}/forgeci-artifacts}")String root){this.root=Path.of(root).toAbsolutePath().normalize();}
