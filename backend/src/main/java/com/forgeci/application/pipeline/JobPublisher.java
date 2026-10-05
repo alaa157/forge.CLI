@@ -46,7 +46,7 @@ public class JobPublisher {
     @Transactional
     public void publishQueuedJobs() {
         for (JobRun job : jobs.findAllByStatus(JobRunStatus.QUEUED)) {
-            UUID publishKey = job.getId();
+            UUID publishKey = job.getAttemptId();
             if (processedMessages.existsByMessageIdAndConsumer(publishKey, PUBLISHER)) {
                 continue;
             }
