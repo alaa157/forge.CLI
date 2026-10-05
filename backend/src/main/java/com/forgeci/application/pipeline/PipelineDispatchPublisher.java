@@ -3,7 +3,6 @@ package com.forgeci.application.pipeline;
 import com.forgeci.config.PipelineDispatchRabbitConfig;
 import com.forgeci.domain.pipeline.*;
 import com.forgeci.infrastructure.pipeline.PipelineDispatchRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,12 +13,12 @@ import org.springframework.transaction.annotation.Transactional;
 public class PipelineDispatchPublisher {
     private final PipelineDispatchRepository dispatches;
     private final RabbitTemplate rabbitTemplate;
-    private final ObjectMapper objectMapper;
 
-    public PipelineDispatchPublisher(PipelineDispatchRepository dispatches, RabbitTemplate rabbitTemplate, ObjectMapper objectMapper) {
+    public PipelineDispatchPublisher(
+            PipelineDispatchRepository dispatches,
+            RabbitTemplate rabbitTemplate) {
         this.dispatches = dispatches;
         this.rabbitTemplate = rabbitTemplate;
-        this.objectMapper = objectMapper;
     }
 
     @Scheduled(fixedDelayString = "${forgeci.pipeline.publisher-delay-ms:500}")
@@ -36,7 +35,7 @@ public class PipelineDispatchPublisher {
             rabbitTemplate.convertAndSend(
                     PipelineDispatchRabbitConfig.EXCHANGE,
                     PipelineDispatchRabbitConfig.ROUTING_KEY,
-                    new PipelineDispatchMessage(UUID.randomUUID(), d.getId(), d.getPipelineRunId()));
+                    new PipelineDispatchMessage(d.getId(), d.getId(), d.getPipelineRunId()));
             d.markPublished();
         } catch (RuntimeException e) {
             d.markFailed(e.getMessage());
