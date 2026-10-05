@@ -1,0 +1,1 @@
+import {AppShell} from "../../components/app-shell";export default function Pipelines(){return <AppShell><h1 className="text-3xl font-semibold">Pipelines</h1><p className="mt-2 text-zinc-500">Pipeline definitions and execution history.</p></AppShell>}
