@@ -3,7 +3,7 @@ package com.forgeci;
 import com.forgeci.infrastructure.user.RefreshTokenRepository;
 import com.forgeci.infrastructure.organization.OrganizationRepository;
 import com.forgeci.infrastructure.organization.OrganizationMemberRepository;
-import com.forgeci.infrastructure.repository.RepositoryRepository;
+import com.forgeci.infrastructure.repository.RepositoryConnectionRepository;
 import com.forgeci.infrastructure.organization.GitHubConnectionRepository;
 import com.forgeci.infrastructure.user.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -23,7 +23,7 @@ class ForgeCiApplicationTests {
     @MockBean RefreshTokenRepository refreshTokenRepository;
     @MockBean OrganizationRepository organizationRepository;
     @MockBean OrganizationMemberRepository organizationMemberRepository;
-    @MockBean RepositoryRepository repositoryRepository;
+    @MockBean RepositoryConnectionRepository repositoryConnectionRepository;
     @MockBean GitHubConnectionRepository gitHubConnectionRepository;
 
     @Test void contextLoads() {}
