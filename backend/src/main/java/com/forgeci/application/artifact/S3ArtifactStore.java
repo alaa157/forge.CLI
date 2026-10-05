@@ -3,8 +3,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forgeci.domain.artifact.StoredArtifact;
 import java.io.*;import java.net.URI;import java.nio.file.*;import java.security.*;import java.time.Duration;
 import io.minio.*;import io.minio.http.Method;
-import org.springframework.beans.factory.annotation.Value;import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;import org.springframework.stereotype.Service;
 @Service
+@ConditionalOnProperty(name="forgeci.artifacts.backend",havingValue="s3")
 public class S3ArtifactStore implements ArtifactStore{
  private final MinioClient client; private final String bucket;
  public S3ArtifactStore(@Value("${forgeci.artifacts.s3.endpoint:http://localhost:9000}")String endpoint,
