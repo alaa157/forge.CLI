@@ -1,0 +1,28 @@
+spring:
+  application.name: forgeci-backend
+  profiles.default: local
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/forgeci}
+    username: ${SPRING_DATASOURCE_USERNAME:forgeci}
+    password: ${SPRING_DATASOURCE_PASSWORD:forgeci_local}
+  jpa:
+    hibernate.ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    validate-on-migrate: true
+  data.redis:
+    host: ${SPRING_DATA_REDIS_HOST:localhost}
+    port: ${SPRING_DATA_REDIS_PORT:6379}
+    password: ${SPRING_DATA_REDIS_PASSWORD:redis_local}
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:localhost}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:forgeci}
+    password: ${SPRING_RABBITMQ_PASSWORD:rabbitmq_local}
+management:
+  endpoints.web.exposure.include: health,prometheus
+  endpoint.health.probes.enabled: true
+  health.livenessstate.enabled: true
+  health.readinessstate.enabled: true
+server.port: ${BACKEND_PORT:8080}
