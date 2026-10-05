@@ -12,7 +12,8 @@ public class LocalArtifactStore implements ArtifactStore{
   return new StoredArtifact(Files.size(target),sha256(target),type==null?"application/octet-stream":type);
  }
  public InputStream open(String key)throws IOException{return Files.newInputStream(safe(key),StandardOpenOption.READ);}
- public URI downloadUrl(String key,Duration ttl){return URI.create("/api/v1/artifacts/download?key="+java.net.URLEncoder.encode(key,java.nio.charset.StandardCharsets.UTF_8));}
+ /** The local store has no signed URLs; callers stream via open() instead. */
+ public URI downloadUrl(String key,Duration ttl){return null;}
  private Path safe(String key){
   if(key==null||key.isBlank()||key.contains("..")||key.startsWith("/")||key.startsWith("\\"))throw new IllegalArgumentException("Unsafe artifact key");
   return root.resolve(key).normalize().startsWith(root)?root.resolve(key).normalize():throwUnsafe();

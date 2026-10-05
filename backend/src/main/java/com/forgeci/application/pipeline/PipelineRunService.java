@@ -29,16 +29,14 @@ public class PipelineRunService {
     private final StepRunRepository stepRuns;
     private final ObjectMapper objectMapper;
     private final PipelineDispatchRepository dispatches;
-    private final JobCancellationRegistry cancellations;
 
     public PipelineRunService(PipelineRunRepository pipelineRuns, JobRunRepository jobRuns,
-                              StepRunRepository stepRuns, ObjectMapper objectMapper, PipelineDispatchRepository dispatches, JobCancellationRegistry cancellations) {
+                              StepRunRepository stepRuns, ObjectMapper objectMapper, PipelineDispatchRepository dispatches) {
         this.pipelineRuns = pipelineRuns;
         this.jobRuns = jobRuns;
         this.stepRuns = stepRuns;
         this.objectMapper = objectMapper;
         this.dispatches = dispatches;
-        this.cancellations = cancellations;
     }
 
     @Transactional
@@ -66,6 +64,8 @@ public class PipelineRunService {
                     serialize(job.commands()),
                     serialize(job.dependsOn() == null ? List.of() : job.dependsOn())
             ));
+            jobRun.setArtifactPaths(serialize(artifactPaths(job)));
+            jobRun = jobRuns.save(jobRun);
             jobs.add(jobRun);
         }
 
@@ -98,6 +98,8 @@ public class PipelineRunService {
             for (String name : dag.topologicalOrder()) {
                 Job job = definition.pipeline().jobs().get(name);
                 JobRun jobRun = jobRuns.save(new JobRun(run.getId(), name, job.image(), serialize(job.commands()), serialize(job.dependsOn() == null ? List.of() : job.dependsOn())));
+                jobRun.setArtifactPaths(serialize(artifactPaths(job)));
+                jobRun = jobRuns.save(jobRun);
                 jobs.add(jobRun);
             }
             for (JobRun jobRun : jobs) {
@@ -122,28 +124,7 @@ public class PipelineRunService {
     public PipelineRun fail(UUID id) { return mutate(id, PipelineRun::fail); }
 
     @Transactional
-    public PipelineRun cancel(UUID id) {
-        PipelineRun run = pipelineRuns.findById(id).orElseThrow(() -> new IllegalArgumentException("Pipeline run not found"));
-        if (PipelineRun.isTerminal(run.getStatus())) return run;
-        if (run.getStatus() == PipelineRunStatus.QUEUED) {
-            run.cancel();
-            for (JobRun job : jobRuns.findAllByPipelineRunIdOrderByNameAsc(id)) {
-                if (job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.PENDING || job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.QUEUED) {
-                    job.cancel(); jobRuns.save(job);
-                }
-            }
-        } else {
-            run.requestCancellation();
-            for (JobRun job : jobRuns.findAllByPipelineRunIdOrderByNameAsc(id)) {
-                if (job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.PENDING || job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.QUEUED) {
-                    job.cancel(); jobRuns.save(job);
-                } else if (job.getStatus() == com.forgeci.domain.pipeline.JobRunStatus.RUNNING) {
-                    job.requestCancellation(); jobRuns.save(job); cancellations.cancel(job.getId());
-                }
-            }
-        }
-        return pipelineRuns.save(run);
-    }
+    public PipelineRun cancel(UUID id) { return mutate(id, PipelineRun::cancel); }
 
     @Transactional
     public PipelineRun timeOut(UUID id) { return mutate(id, PipelineRun::timeOut); }
@@ -153,6 +134,10 @@ public class PipelineRunService {
                 .orElseThrow(() -> new IllegalArgumentException("Pipeline run not found"));
         action.accept(run);
         return pipelineRuns.save(run);
+    }
+
+    private static List<String> artifactPaths(Job job) {
+        return job.artifacts() == null || job.artifacts().paths() == null ? List.of() : job.artifacts().paths();
     }
 
     private String serialize(Object value) {

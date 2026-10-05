@@ -1,10 +1,13 @@
 package com.forgeci.application.pipeline;
 
+import com.forgeci.application.artifact.ArtifactCollector;
+import com.forgeci.application.artifact.ArtifactService;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,17 +31,20 @@ public class DockerJobExecutor implements JobExecutor {
     private final String dockerBinary;
     private final WorkspaceManager workspaces;
     private final LogChunkService logs;
-    private final JobCancellationRegistry cancellations;
+    private final ArtifactCollector artifactCollector;
+    private final ArtifactService artifactService;
 
     public DockerJobExecutor(
             @Value("${forgeci.worker.docker-binary:docker}") String dockerBinary,
             WorkspaceManager workspaces,
             LogChunkService logs,
-            JobCancellationRegistry cancellations) {
+            ArtifactCollector artifactCollector,
+            ArtifactService artifactService) {
         this.dockerBinary = dockerBinary;
         this.workspaces = workspaces;
         this.logs = logs;
-        this.cancellations = cancellations;
+        this.artifactCollector = artifactCollector;
+        this.artifactService = artifactService;
     }
 
     @Override
@@ -85,22 +91,24 @@ public class DockerJobExecutor implements JobExecutor {
             args.add(request.command());
 
             Process process = new ProcessBuilder(args).redirectErrorStream(false).start();
-            cancellations.registerProcess(request.jobId(), process);
             ExecutorService io = Executors.newFixedThreadPool(2);
             AtomicLong sequence = new AtomicLong(logs.nextSequence(request.jobId()));
             Future<?> out = io.submit(() -> capture(process.getInputStream(), request.jobId(), "stdout", sequence));
             Future<?> err = io.submit(() -> capture(process.getErrorStream(), request.jobId(), "stderr", sequence));
             try {
+                ExecutionResult result;
                 if (!process.waitFor(request.timeout().toMillis(), TimeUnit.MILLISECONDS)) {
                     process.destroyForcibly();
-                    return new ExecutionResult(124, true);
+                    result = new ExecutionResult(124, true);
+                } else {
+                    out.get(5, TimeUnit.SECONDS);
+                    err.get(5, TimeUnit.SECONDS);
+                    result = new ExecutionResult(process.exitValue(), false);
                 }
-                out.get(5, TimeUnit.SECONDS);
-                err.get(5, TimeUnit.SECONDS);
-                return new ExecutionResult(process.exitValue(), false);
+                collectArtifacts(request, workspace);
+                return result;
             } finally {
                 io.shutdownNow();
-                cancellations.unregister(request.jobId());
             }
         } catch (IOException e) {
             throw new IllegalStateException("Unable to start container runtime", e);
@@ -111,6 +119,26 @@ public class DockerJobExecutor implements JobExecutor {
             throw new IllegalStateException("Unable to capture container output", e);
         } finally {
             workspaces.cleanup(workspace);
+        }
+    }
+
+    /** Phase 12: after the step, match configured artifact paths, zip them and upload. */
+    private void collectArtifacts(JobExecutionRequest request, Path workspace) {
+        if (request.artifactPaths().isEmpty()) {
+            return;
+        }
+        try {
+            var zip = artifactCollector.collect(workspace, request.artifactPaths());
+            if (zip.isPresent()) {
+                try {
+                    artifactService.save(request.jobId(), "artifacts.zip", zip.get(), "application/zip");
+                } finally {
+                    Files.deleteIfExists(zip.get());
+                }
+            }
+        } catch (Exception e) {
+            logs.append(request.jobId(), "stderr", logs.nextSequence(request.jobId()),
+                    "[forgeci] artifact collection failed: " + e.getMessage() + System.lineSeparator());
         }
     }
 

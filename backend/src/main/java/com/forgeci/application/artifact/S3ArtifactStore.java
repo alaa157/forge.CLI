@@ -13,6 +13,13 @@ public class S3ArtifactStore implements ArtifactStore{
   @Value("${forgeci.artifacts.s3.secret-key:minioadmin}")String secret,
   @Value("${forgeci.artifacts.s3.bucket:forgeci-artifacts}")String bucket){
   this.bucket=bucket;this.client=MinioClient.builder().endpoint(endpoint).credentials(access,secret).build();
+  ensureBucket();
+ }
+ private void ensureBucket(){
+  try{
+   if(!client.bucketExists(BucketExistsArgs.builder().bucket(bucket).build()))
+    client.makeBucket(MakeBucketArgs.builder().bucket(bucket).build());
+  }catch(Exception e){throw new IllegalStateException("Unable to ensure artifact bucket "+bucket,e);}
  }
  public StoredArtifact put(String key,Path file,String type)throws IOException{
   try{

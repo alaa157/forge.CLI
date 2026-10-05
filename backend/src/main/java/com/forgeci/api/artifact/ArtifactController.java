@@ -10,7 +10,7 @@ public class ArtifactController{
  @GetMapping("/artifacts/{id}/download") public ResponseEntity<?> download(@PathVariable UUID id)throws IOException{
   Artifact a;try{a=service.get(id);}catch(java.util.NoSuchElementException e){return ResponseEntity.notFound().build();}
   URI url=service.signedUrl(a);
-  if(url.isAbsolute())return ResponseEntity.status(HttpStatus.FOUND).location(url).build();
+  if(url!=null&&url.isAbsolute())return ResponseEntity.status(HttpStatus.FOUND).location(url).build();
   return ResponseEntity.ok().contentType(MediaType.parseMediaType(a.getContentType())).contentLength(a.getSizeBytes())
    .header(HttpHeaders.CONTENT_DISPOSITION,"attachment; filename=\""+a.getName().replace("\"","_")+"\"")
    .body(new InputStreamResource(service.open(a)));
