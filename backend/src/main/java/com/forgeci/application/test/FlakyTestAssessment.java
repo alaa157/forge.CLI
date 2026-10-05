@@ -1,0 +1,2 @@
+package com.forgeci.application.test;
+public record FlakyTestAssessment(String testId,String classification,double score,int sampleSize,double failureFrequency,double inconsistency,double recencyFailureRate,double durationInstability){}
