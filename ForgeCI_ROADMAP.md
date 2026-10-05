@@ -1696,13 +1696,13 @@ SKIPPED
 
 Calculate:
 
-- [ ] pass rate
-- [ ] failure rate
-- [ ] average duration
-- [ ] p95 duration
-- [ ] recent failure rate
-- [ ] consecutive failures
-- [ ] execution count
+- [x] pass rate
+- [x] failure rate
+- [x] average duration
+- [x] p95 duration
+- [x] recent failure rate
+- [x] consecutive failures
+- [x] execution count
 
 ---
 
