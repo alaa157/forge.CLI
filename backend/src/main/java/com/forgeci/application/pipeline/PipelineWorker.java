@@ -1,62 +1,146 @@
 package com.forgeci.application.pipeline;
 
-import com.forgeci.application.github.GitHubConnectionService;
 import com.forgeci.config.PipelineDispatchRabbitConfig;
 import com.forgeci.domain.pipeline.*;
-import com.forgeci.domain.repository.RepositoryConnection;
 import com.forgeci.infrastructure.pipeline.*;
-import com.forgeci.infrastructure.repository.RepositoryConnectionRepository;
-import java.time.Duration;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Transitional in-process executor (see ADR 0002). Prefer Go forge-runner in production.
+ * Jobs must already be QUEUED by JobScheduler after dependency resolution.
+ */
 @Service
 public class PipelineWorker {
-    static final String CONSUMER="pipeline-worker";
-    private final PipelineRunRepository runs; private final JobRunRepository jobs; private final StepRunRepository steps;
-    private final ProcessedMessageRepository processedMessages; private final RepositoryConnectionRepository repositories;
-    private final GitHubConnectionService github; private final JobExecutor executor;
-    private final long timeoutSeconds; private final int cpuLimit; private final long memoryBytes; private final long pidsLimit;
+    static final String CONSUMER = "pipeline-worker";
 
-    public PipelineWorker(PipelineRunRepository runs,JobRunRepository jobs,StepRunRepository steps,ProcessedMessageRepository processedMessages,
-                          RepositoryConnectionRepository repositories,GitHubConnectionService github,JobExecutor executor,
-                          @Value("${forgeci.worker.step-timeout-seconds:1800}") long timeoutSeconds,
-                          @Value("${forgeci.worker.cpu-limit:2}") int cpuLimit,
-                          @Value("${forgeci.worker.memory-bytes:2147483648}") long memoryBytes,
-                          @Value("${forgeci.worker.pids-limit:256}") long pidsLimit){
-        this.runs=runs;this.jobs=jobs;this.steps=steps;this.processedMessages=processedMessages;this.repositories=repositories;this.github=github;this.executor=executor;
-        this.timeoutSeconds=timeoutSeconds;this.cpuLimit=cpuLimit;this.memoryBytes=memoryBytes;this.pidsLimit=pidsLimit;
+    private final PipelineRunRepository runs;
+    private final JobRunRepository jobs;
+    private final StepRunRepository steps;
+    private final ProcessedMessageRepository processedMessages;
+    private final ContainerExecutor executor;
+
+    public PipelineWorker(
+            PipelineRunRepository runs,
+            JobRunRepository jobs,
+            StepRunRepository steps,
+            ProcessedMessageRepository processedMessages,
+            ContainerExecutor executor) {
+        this.runs = runs;
+        this.jobs = jobs;
+        this.steps = steps;
+        this.processedMessages = processedMessages;
+        this.executor = executor;
     }
 
-    @RabbitListener(queues=PipelineDispatchRabbitConfig.QUEUE)
+    @RabbitListener(queues = PipelineDispatchRabbitConfig.QUEUE)
     @Transactional
-    public void consume(PipelineDispatchMessage message){
-        if(processedMessages.claim(UUID.randomUUID(),message.messageId(),CONSUMER)!=1)return;
-        PipelineRun run=runs.findById(message.pipelineRunId()).orElse(null);
-        if(run==null||PipelineRun.isTerminal(run.getStatus())||run.getStatus()!=PipelineRunStatus.QUEUED)return;
-        RepositoryConnection repository=repositories.findById(run.getRepositoryId()).orElseThrow(()->new IllegalStateException("Repository not found"));
-        String token=github.webhookToken(repository.getOrganization().getId());
-        run.transitionTo(PipelineRunStatus.RUNNING);runs.save(run);
-        try{
-            boolean failed=false;
-            for(JobRun job:jobs.findByPipelineRunIdOrderByJobNameAsc(run.getId())){
-                if(failed){job.skip();jobs.save(job);continue;}
-                job.queue();job.start();jobs.save(job);boolean jobFailed=false;
-                for(StepRun step:steps.findByJobRunIdOrderByStepIndexAsc(job.getId())){
-                    if(jobFailed){step.skip();steps.save(step);continue;}
-                    step.start();steps.save(step);
-                    var result=executor.execute(new JobExecutionRequest(job.getId(),run.getRepositoryId(),repository.getCloneUrl(),token,run.getCommitSha(),
-                            job.getImage(),step.getCommand(),Map.of(),Duration.ofSeconds(timeoutSeconds),cpuLimit,memoryBytes,pidsLimit));
-                    if(result.timedOut())step.timeOut();else if(result.exitCode()==0)step.succeed();else step.fail();
-                    steps.save(step);jobFailed=result.timedOut()||result.exitCode()!=0;
+    public void consume(PipelineDispatchMessage message) {
+        if (processedMessages.claim(UUID.randomUUID(), message.messageId(), CONSUMER) != 1) {
+            return;
+        }
+
+        PipelineRun run = runs.findById(message.pipelineRunId()).orElse(null);
+        if (run == null || PipelineRun.isTerminal(run.getStatus())) {
+            return;
+        }
+        if (run.getStatus() != PipelineRunStatus.QUEUED && run.getStatus() != PipelineRunStatus.RUNNING) {
+            return;
+        }
+
+        if (run.getStatus() == PipelineRunStatus.QUEUED) {
+            run.transitionTo(PipelineRunStatus.RUNNING);
+            runs.save(run);
+        }
+
+        try {
+            List<JobRun> jobRuns = jobs.findAllByPipelineRunIdOrderByNameAsc(run.getId());
+            boolean anyFailed = false;
+
+            for (JobRun job : jobRuns) {
+                if (job.getStatus() == JobRunStatus.SKIPPED) {
+                    continue;
                 }
-                if(jobFailed)job.fail();else job.succeed();jobs.save(job);failed=jobFailed;
+                if (job.getStatus() == JobRunStatus.PENDING) {
+                    continue;
+                }
+                if (job.getStatus() == JobRunStatus.SUCCEEDED
+                        || job.getStatus() == JobRunStatus.FAILED
+                        || job.getStatus() == JobRunStatus.CANCELLED
+                        || job.getStatus() == JobRunStatus.TIMED_OUT) {
+                    if (job.getStatus() == JobRunStatus.FAILED
+                            || job.getStatus() == JobRunStatus.TIMED_OUT
+                            || job.getStatus() == JobRunStatus.CANCELLED) {
+                        anyFailed = true;
+                    }
+                    continue;
+                }
+                if (job.getStatus() != JobRunStatus.QUEUED && job.getStatus() != JobRunStatus.RUNNING) {
+                    continue;
+                }
+
+                if (job.getStatus() == JobRunStatus.QUEUED) {
+                    job.start();
+                    jobs.save(job);
+                }
+
+                boolean jobFailed = false;
+                for (StepRun step : steps.findAllByJobRunIdOrderByPositionAsc(job.getId())) {
+                    if (jobFailed) {
+                        if (step.getStatus() == StepRunStatus.PENDING) {
+                            step.skip();
+                            steps.save(step);
+                        }
+                        continue;
+                    }
+
+                    step.start();
+                    steps.save(step);
+
+                    int exitCode = executor.execute(
+                            job.getImage(),
+                            step.getCommand(),
+                            job.getId().toString(),
+                            run.getCommitSha());
+
+                    if (exitCode == 124) {
+                        step.timeOut();
+                    } else if (exitCode == 0) {
+                        step.succeed();
+                    } else {
+                        step.fail();
+                    }
+                    steps.save(step);
+                    jobFailed = exitCode != 0;
+                }
+
+                if (jobFailed) {
+                    job.fail();
+                    anyFailed = true;
+                } else {
+                    job.succeed();
+                }
+                jobs.save(job);
             }
-            run.transitionTo(failed?PipelineRunStatus.FAILED:PipelineRunStatus.SUCCEEDED);
-        }catch(RuntimeException e){if(!PipelineRun.isTerminal(run.getStatus()))run.transitionTo(PipelineRunStatus.FAILED);}
+
+            boolean allTerminal = jobRuns.stream().allMatch(j ->
+                    j.getStatus() == JobRunStatus.SUCCEEDED
+                            || j.getStatus() == JobRunStatus.FAILED
+                            || j.getStatus() == JobRunStatus.SKIPPED
+                            || j.getStatus() == JobRunStatus.CANCELLED
+                            || j.getStatus() == JobRunStatus.TIMED_OUT);
+            if (allTerminal) {
+                run.transitionTo(anyFailed ? PipelineRunStatus.FAILED : PipelineRunStatus.SUCCEEDED);
+            }
+        } catch (RuntimeException e) {
+            if (!PipelineRun.isTerminal(run.getStatus())) {
+                run.transitionTo(PipelineRunStatus.FAILED);
+            }
+        }
+
         runs.save(run);
     }
 }
