@@ -28,7 +28,7 @@ public record PipelineDefinition(
             Integer timeout,
             Integer retries,
             Artifacts artifacts,
-            Cache cache,
+            Cache cache,\n            List<String> secrets,
             @JsonProperty("working_directory") String workingDirectory
     ) {}
 
