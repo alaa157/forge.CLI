@@ -33,7 +33,8 @@ public class DockerJobExecutor implements JobExecutor {
     public DockerJobExecutor(
             @Value("${forgeci.worker.docker-binary:docker}") String dockerBinary,
             WorkspaceManager workspaces,
-            LogChunkService logs) {
+            LogChunkService logs,
+            JobCancellationRegistry cancellations) {
         this.dockerBinary = dockerBinary;
         this.workspaces = workspaces;
         this.logs = logs;
