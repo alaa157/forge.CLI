@@ -1,5 +1,7 @@
 package com.forgeci;
 
+import com.forgeci.application.github.GitHubConnectionService;
+import com.forgeci.application.pipeline.JobExecutor;
 import com.forgeci.infrastructure.user.RefreshTokenRepository;
 import com.forgeci.infrastructure.organization.OrganizationRepository;
 import com.forgeci.infrastructure.organization.OrganizationMemberRepository;
@@ -7,11 +9,7 @@ import com.forgeci.infrastructure.repository.RepositoryConnectionRepository;
 import com.forgeci.infrastructure.organization.GitHubConnectionRepository;
 import com.forgeci.infrastructure.user.UserRepository;
 import com.forgeci.infrastructure.webhook.WebhookDeliveryRepository;
-import com.forgeci.infrastructure.pipeline.PipelineRunRepository;
-import com.forgeci.infrastructure.pipeline.JobRunRepository;
-import com.forgeci.infrastructure.pipeline.StepRunRepository;
-import com.forgeci.infrastructure.pipeline.PipelineDispatchRepository;
-import com.forgeci.infrastructure.pipeline.ProcessedMessageRepository;
+import com.forgeci.infrastructure.pipeline.*;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,6 +36,9 @@ class ForgeCiApplicationTests {
     @MockBean StepRunRepository stepRunRepository;
     @MockBean PipelineDispatchRepository pipelineDispatchRepository;
     @MockBean ProcessedMessageRepository processedMessageRepository;
+    @MockBean LogChunkRepository logChunkRepository;
+    @MockBean GitHubConnectionService gitHubConnectionService;
+    @MockBean JobExecutor jobExecutor;
     @MockBean RabbitTemplate rabbitTemplate;
 
     @Test void contextLoads() {}
