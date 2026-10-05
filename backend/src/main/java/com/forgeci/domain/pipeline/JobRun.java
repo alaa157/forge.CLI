@@ -39,6 +39,23 @@ public class JobRun {
     @Column(nullable=false, length=20)
     private JobRunStatus status;
 
+    /** Phase 17.2 — attempt number (1-based). */
+    @Column(name="attempt_number", nullable=false)
+    private int attemptNumber = 1;
+
+    @Column(name="attempt_id", nullable=false)
+    private UUID attemptId = UUID.randomUUID();
+
+    @Enumerated(EnumType.STRING)
+    @Column(name="last_failure_type", length=40)
+    private FailureType lastFailureType;
+
+    @Column(name="cancellation_requested", nullable=false)
+    private boolean cancellationRequested = false;
+
+    @Column(name="max_retries", nullable=false)
+    private int maxRetries = 0;
+
     @Column(name="lease_id")
     private UUID leaseId;
 
@@ -74,6 +91,9 @@ public class JobRun {
         this.artifactPaths = "[]";
         this.priority = "NORMAL";
         this.status = JobRunStatus.PENDING;
+        this.attemptNumber = 1;
+        this.attemptId = UUID.randomUUID();
+        this.maxRetries = 0;
     }
 
     @PrePersist void onCreate() { createdAt = Instant.now(); }
@@ -85,6 +105,40 @@ public class JobRun {
     public void cancel() { transition(JobRunStatus.CANCELLED); finishedAt = Instant.now(); clearLease(); }
     public void timeOut() { transition(JobRunStatus.TIMED_OUT); finishedAt = Instant.now(); clearLease(); }
     public void skip() { transition(JobRunStatus.SKIPPED); finishedAt = Instant.now(); clearLease(); }
+
+    public void requestCancellation() { this.cancellationRequested = true; }
+
+    public void recordFailure(FailureType type) { this.lastFailureType = type; }
+
+    public void setMaxRetries(int maxRetries) { this.maxRetries = Math.max(0, maxRetries); }
+
+    /**
+     * Phase 17.2/17.3 — requeue a failed job for another attempt when policy allows.
+     * Returns true if a new attempt was started.
+     */
+    public boolean scheduleRetryIfEligible() {
+        if (status != JobRunStatus.FAILED && status != JobRunStatus.TIMED_OUT) {
+            return false;
+        }
+        if (cancellationRequested) {
+            return false;
+        }
+        if (lastFailureType != null && !lastFailureType.isRetryable()) {
+            return false;
+        }
+        if (attemptNumber > maxRetries) {
+            return false;
+        }
+        // attemptNumber is current finished attempt; next attempt = attemptNumber + 1
+        // allowed when attemptNumber <= maxRetries (e.g. maxRetries=2 allows attempts 1,2,3)
+        this.attemptNumber = attemptNumber + 1;
+        this.attemptId = UUID.randomUUID();
+        this.startedAt = null;
+        this.finishedAt = null;
+        clearLease();
+        this.status = JobRunStatus.QUEUED;
+        return true;
+    }
 
     public void acquireLease(UUID leaseId, UUID workerId, Instant expiresAt) {
         this.leaseId = leaseId;
@@ -103,6 +157,7 @@ public class JobRun {
         clearLease();
         this.status = JobRunStatus.QUEUED;
         this.startedAt = null;
+        this.lastFailureType = FailureType.WORKER_FAILURE;
     }
 
     private void clearLease() {
@@ -132,11 +187,15 @@ public class JobRun {
     public String getImage(){return image;}
     public String getCommands(){return commands;}
     public String getDependsOn(){return dependsOn;}
-    /** JSON-encoded list of artifact glob patterns from the pipeline definition. */
     public String getArtifactPaths(){return artifactPaths;}
     public void setArtifactPaths(String artifactPaths){this.artifactPaths=artifactPaths==null?"[]":artifactPaths;}
     public String getPriority(){return priority;}
     public JobRunStatus getStatus(){return status;}
+    public int getAttemptNumber(){return attemptNumber;}
+    public UUID getAttemptId(){return attemptId;}
+    public FailureType getLastFailureType(){return lastFailureType;}
+    public boolean isCancellationRequested(){return cancellationRequested;}
+    public int getMaxRetries(){return maxRetries;}
     public UUID getLeaseId(){return leaseId;}
     public UUID getLeaseWorkerId(){return leaseWorkerId;}
     public Instant getLeaseExpiresAt(){return leaseExpiresAt;}
