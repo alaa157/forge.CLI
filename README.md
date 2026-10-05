@@ -15,6 +15,8 @@ Self-hosted, production-style CI/CD and test-intelligence platform.
 - Phase 9 — RabbitMQ Messaging
 - Phase 10 — Docker Execution: exact-commit checkout, disposable workspaces, executor abstraction, resource limits, and container hardening.
 - Phase 11 — Logs: chunked durable stdout/stderr storage, bounded log retention, HTTP retrieval, and live STOMP/WebSocket delivery.
+- Phase 12 — Artifacts: durable ZIP artifact collection, local/MinIO S3-compatible storage, metadata, and download APIs.
+- Phase 13 — Test Intelligence: secure JUnit ingestion, canonical test identities, execution history, and failure/duration analytics.
 
 ## Prerequisites
 
