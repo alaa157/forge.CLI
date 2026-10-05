@@ -29,14 +29,16 @@ public class PipelineRunService {
     private final StepRunRepository stepRuns;
     private final ObjectMapper objectMapper;
     private final PipelineDispatchRepository dispatches;
+    private final JobCancellationRegistry cancellations;
 
     public PipelineRunService(PipelineRunRepository pipelineRuns, JobRunRepository jobRuns,
-                              StepRunRepository stepRuns, ObjectMapper objectMapper, PipelineDispatchRepository dispatches) {
+                              StepRunRepository stepRuns, ObjectMapper objectMapper, PipelineDispatchRepository dispatches, JobCancellationRegistry cancellations) {
         this.pipelineRuns = pipelineRuns;
         this.jobRuns = jobRuns;
         this.stepRuns = stepRuns;
         this.objectMapper = objectMapper;
         this.dispatches = dispatches;
+        this.cancellations = cancellations;
     }
 
     @Transactional
