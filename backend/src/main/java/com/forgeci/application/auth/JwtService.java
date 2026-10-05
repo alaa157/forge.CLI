@@ -13,7 +13,7 @@ import com.nimbusds.jose.jwk.source.ImmutableSecret;
 @Service
 public class JwtService {
  private final JwtEncoder encoder; private final JwtDecoder decoder; private final long accessSeconds;
- public JwtService(@Value("\${forgeci.auth.jwt-secret}") String secret,@Value("\${forgeci.auth.access-token-seconds:900}") long accessSeconds) {
+ public JwtService(@Value("${forgeci.auth.jwt-secret}") String secret,@Value("${forgeci.auth.access-token-seconds:900}") long accessSeconds) {
   if(secret.length()<32) throw new IllegalArgumentException("JWT secret must be at least 32 characters");
   var key=new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8),"HmacSHA256");
   encoder=new NimbusJwtEncoder(new ImmutableSecret<>(key));
