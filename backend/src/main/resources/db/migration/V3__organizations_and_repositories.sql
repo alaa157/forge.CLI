@@ -51,3 +51,14 @@ CREATE TABLE forgeci.github_connections (
 );
 CREATE INDEX idx_github_connections_org ON forgeci.github_connections(organization_id);
 CREATE UNIQUE INDEX uk_github_connection_org_account ON forgeci.github_connections(organization_id,external_account_id);
+
+CREATE TABLE forgeci.oauth_states (
+ id UUID PRIMARY KEY,
+ user_id UUID NOT NULL REFERENCES forgeci.users(id),
+ organization_id UUID NOT NULL REFERENCES forgeci.organizations(id),
+ state_hash VARCHAR(64) NOT NULL UNIQUE,
+ expires_at TIMESTAMPTZ NOT NULL,
+ consumed_at TIMESTAMPTZ,
+ created_at TIMESTAMPTZ NOT NULL
+);
+CREATE INDEX idx_oauth_states_expiry ON forgeci.oauth_states(expires_at);
