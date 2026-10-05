@@ -113,3 +113,23 @@ Phase 11 provides durable chunked logs plus a live WebSocket/STOMP stream. Objec
 - Historical and dashboard endpoints implemented.
 - Run cancellation/retry and job/test resource endpoints implemented.
 - Retry uses immutable pipeline snapshots and the existing durable dispatch boundary.
+
+
+## Phase 16 status
+
+- Next.js application shell with persistent navigation.
+- Engineering dashboard with pipeline outcome summary and recent runs.
+- Run detail and job detail views.
+- Live job log stream over the existing STOMP/WebSocket topic with HTTP log recovery fallback.
+- Flaky-test view and core product navigation pages.
+- API client uses configurable `NEXT_PUBLIC_API_BASE_URL` and `NEXT_PUBLIC_DEFAULT_REPOSITORY_ID`.
+
+## Phase 17 status
+
+- Durable job attempt number and attempt UUID persisted on every job run.
+- Retry messages use the durable attempt identity so each retry is independently publishable and idempotent.
+- Pipeline/job cancellation requests are persisted.
+- Running Docker processes are explicitly terminated through the cancellation registry.
+- Automatic retries are limited to infrastructure/worker failures and honor job-level then pipeline-level retry configuration.
+- Test failures and timeouts are not automatically retried by default.
+- Retry resets the job's step state and creates a fresh attempt identity.
