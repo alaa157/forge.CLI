@@ -32,6 +32,14 @@ forgeci:
     global-concurrency: ${FORGECI_SCHEDULER_GLOBAL_CONCURRENCY:20}
     organization-concurrency: ${FORGECI_SCHEDULER_ORG_CONCURRENCY:5}
     repository-concurrency: ${FORGECI_SCHEDULER_REPO_CONCURRENCY:2}
+  artifacts:
+    backend: ${FORGECI_ARTIFACT_BACKEND:local}
+    local-root: ${FORGECI_ARTIFACT_LOCAL_ROOT:${java.io.tmpdir}/forgeci-artifacts}
+    s3:
+      endpoint: ${FORGECI_ARTIFACT_S3_ENDPOINT:http://localhost:9000}
+      access-key: ${FORGECI_ARTIFACT_S3_ACCESS_KEY:minioadmin}
+      secret-key: ${FORGECI_ARTIFACT_S3_SECRET_KEY:minioadmin}
+      bucket: ${FORGECI_ARTIFACT_S3_BUCKET:forgeci-artifacts}
   pipeline:
     scheduler-delay-ms: ${FORGECI_PIPELINE_SCHEDULER_DELAY_MS:500}
     publisher-delay-ms: ${FORGECI_PIPELINE_PUBLISHER_DELAY_MS:500}
