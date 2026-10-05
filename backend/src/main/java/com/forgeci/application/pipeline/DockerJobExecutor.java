@@ -98,8 +98,8 @@ public class DockerJobExecutor implements JobExecutor {
             cancellations.registerProcess(request.jobId(), process);
             ExecutorService io = Executors.newFixedThreadPool(2);
             AtomicLong sequence = new AtomicLong(logs.nextSequence(request.jobId()));
-            Future<?> out = io.submit(() -> capture(process.getInputStream(), request.jobId(), "stdout", sequence));
-            Future<?> err = io.submit(() -> capture(process.getErrorStream(), request.jobId(), "stderr", sequence));
+            Future<?> out = io.submit(() -> capture(process.getInputStream(), request.jobId(), "stdout", sequence, request.environment().values()));
+            Future<?> err = io.submit(() -> capture(process.getErrorStream(), request.jobId(), "stderr", sequence, request.environment().values()));
             try {
                 ExecutionResult result;
                 if (!process.waitFor(request.timeout().toMillis(), TimeUnit.MILLISECONDS)) {
@@ -147,11 +147,11 @@ public class DockerJobExecutor implements JobExecutor {
         }
     }
 
-    private void capture(InputStream input, UUID jobId, String stream, AtomicLong sequence) {
+    private void capture(InputStream input, UUID jobId, String stream, AtomicLong sequence, java.util.Collection<String> secrets) {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                logs.append(jobId, stream, sequence.getAndIncrement(), SecretMasker.mask(line, request.environment().values()) + System.lineSeparator());
+                logs.append(jobId, stream, sequence.getAndIncrement(), SecretMasker.mask(line, secrets) + System.lineSeparator());
             }
         } catch (IOException e) {
             logs.append(jobId, stream, sequence.getAndIncrement(), "[log capture failed]" + System.lineSeparator());
