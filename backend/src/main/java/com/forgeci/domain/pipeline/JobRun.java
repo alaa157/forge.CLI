@@ -188,7 +188,7 @@ public class JobRun {
     public String getCommands(){return commands;}
     public String getDependsOn(){return dependsOn;}
     public String getArtifactPaths(){return artifactPaths;}
-    public void setArtifactPaths(String artifactPaths){this.artifactPaths=artifactPaths==null?"[]":artifactPaths;}
+    public void setArtifactPaths(String artifactPaths){this.artifactPaths=artifactPaths==null?"[]":artifactPaths;}\n    public String getCacheKey(){return cacheKey;}\n    public void setCacheKey(String cacheKey){this.cacheKey=cacheKey;}\n    public String getCachePaths(){return cachePaths;}\n    public void setCachePaths(String cachePaths){this.cachePaths=cachePaths==null?"[]":cachePaths;}\n    public String getSecretNames(){return secretNames;}\n    public void setSecretNames(String secretNames){this.secretNames=secretNames==null?"[]":secretNames;}
     public String getPriority(){return priority;}
     public JobRunStatus getStatus(){return status;}
     public int getAttemptNumber(){return attemptNumber;}
