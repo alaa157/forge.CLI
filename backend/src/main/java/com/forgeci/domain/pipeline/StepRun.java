@@ -17,7 +17,7 @@ public class StepRun {
     @Column(nullable=false)
     private int position;
 
-    @Column(nullable=false,length=255)
+    @Column(nullable=false,length=8192)
     private String command;
 
     @Enumerated(EnumType.STRING)
