@@ -31,3 +31,6 @@ make backend-test
 make frontend-check
 
 See docs/api/docker-execution.md and docs/api/logs.md for the Phase 10/11 execution and log boundaries.
+
+- Phase 14 — Flaky Test Detection: bounded flakiness scoring, classifications, historical analysis, and dashboard data.
+- Phase 15 — REST API: formal run, job, test, flaky-test, artifact, and execution resource endpoints.
